@@ -3,7 +3,10 @@
 import { $, ICONO, escapar, avisar, comprobarGuardado } from '../ui.js';
 import { estado, guardar } from '../datos/almacen.js';
 import { TIPOS, normalizar } from '../nucleo/productos.js';
-import { lineaGenero, tieneGenero, ponerDato, ponerFondo, avisosLinea, ventaPosible, resumenGenero, esHabitual, borrarDia } from '../nucleo/dia.js';
+import {
+  lineaGenero, tieneGenero, ponerDato, ponerFondo, avisosLinea, ventaPosible, resumenGenero, esHabitual, borrarDia,
+  precioActual, revisarCambio, ponerCambio, quitarCambio,
+} from '../nucleo/dia.js';
 import { aCentimos, aMilesimas, aUnidades, fmtEuros, fmtKg, fmtUnidades, centimosATexto, milesimasATexto } from '../nucleo/numeros.js';
 import { hoyISO, sumarDias, esFecha, fechaLarga, fechaCorta } from '../nucleo/fechas.js';
 
@@ -33,7 +36,28 @@ function textoAviso(a) {
     'sin-ganancia': 'Con este precio no se gana dinero',
     'precio-muy-distinto': `Precio muy distinto al del último día (${fmtEuros(a.antes)})`,
     'coste-muy-distinto': `Coste muy distinto al del último día (${fmtEuros(a.antes)})`,
+    'cambio-con-mas-que-inicio': 'Hay un cambio de precio con más género del que había al empezar: revisa los kilos o quita ese cambio',
   }[a.tipo];
+}
+
+function textoErrorCambio(error, p, l) {
+  const u = porUnidades(p) ? 'las unidades que quedan' : 'lo que queda';
+  return {
+    'sin-genero': 'Primero apunta con cuánto empieza el día este producto.',
+    'falta-cantidad': `Escribe ${u} en el mostrador. Sin ese dato no se sabe qué se vendió a cada precio.`,
+    'falta-precio': 'Escribe el precio nuevo.',
+    'no-queda': 'Si no queda nada, no hace falta cambiar el precio.',
+    'mas-que-inicio': `No puede quedar más de lo que había al empezar (${cantidad(p, l.inicio)}).`,
+    'mismo-precio': 'Es el mismo precio que ya tenía.',
+  }[error];
+}
+
+const cantidad = (p, m) => (porUnidades(p) ? fmtUnidades(m) : fmtKg(m));
+const porUnidad = (p) => (porUnidades(p) ? 'ud' : 'kg');
+
+function horaAhora() {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
 function cantidades(r) {
@@ -50,6 +74,7 @@ function pintarCifras() {
     ['Coste del género', r.sinCoste.length ? `${fmtEuros(r.coste)} <small>faltan ${r.sinCoste.length}</small>` : fmtEuros(r.coste)],
     ['Venta posible', r.sinPrecio.length ? `${fmtEuros(r.venta)} <small>faltan ${r.sinPrecio.length}</small>` : fmtEuros(r.venta)],
     ['Ganancia posible', r.gananciaPosible == null ? '—' : fmtEuros(r.gananciaPosible)],
+    ['Cambios de precio', r.cambios],
   ];
   $('dia-cifras').innerHTML = cifras.map(([k, v]) => `<div class="cifra"><small>${k}</small><strong>${v}</strong></div>`).join('');
 
@@ -90,11 +115,107 @@ function actualizarFila(fila) {
     nota.textContent = avisos.map(textoAviso).join(' · ');
   } else if (con) {
     nota.className = 'fg-nota';
-    nota.textContent = `Venta posible ${fmtEuros(ventaPosible(p, l))}`;
+    const ahora = l.cambios.length && precioActual(l) != null ? ` · Ahora a ${fmtEuros(precioActual(l))}/${porUnidad(p)}` : '';
+    nota.textContent = `Venta posible ${fmtEuros(ventaPosible(p, l))}${ahora}`;
   } else {
     nota.className = 'fg-nota';
     nota.textContent = '';
   }
+
+  // Solo se puede cambiar el precio de lo que se ha traído
+  const abrir = fila.querySelector('[data-abrir-cambio]');
+  const form = fila.querySelector('.form-cambio');
+  if (!con) form.hidden = true;
+  abrir.hidden = !con || !form.hidden;
+}
+
+// ---------- Cambios de precio ----------
+
+function bloqueCambios(p) {
+  const l = lineaGenero(estado.dias, p, fecha);
+  const u = porUnidad(p);
+  const nombre = escapar(p.nombre);
+  const lista = l.cambios.map((c, i) => `<li>
+      <span>${c.hora ? `<strong>${escapar(c.hora)}</strong> · ` : ''}quedaban <span class="importe">${cantidad(p, c.quedaban)}</span> → <span class="importe">${fmtEuros(c.pvp)}/${u}</span></span>
+      <button type="button" class="btn secundario" data-quitar-cambio="${i}" aria-label="Quitar el cambio de precio${c.hora ? ` de las ${escapar(c.hora)}` : ''} de ${nombre}">Quitar</button>
+    </li>`).join('');
+  return `${l.cambios.length ? `<p class="fc-titulo">Cambios de precio</p><ul class="lista-cambios">${lista}</ul>` : ''}
+    <button type="button" class="btn secundario btn-cambio" data-abrir-cambio>Cambiar precio</button>
+    <form class="form-cambio" hidden novalidate>
+      <p class="fc-titulo">Cambio de precio de ${nombre}</p>
+      <p class="ayuda">${porUnidades(p) ? 'Cuenta las unidades' : 'Pesa lo'} que queda en el mostrador ahora: lo vendido hasta ahora cuenta al precio de antes y lo que queda, al nuevo.</p>
+      <div class="fc-campos">
+        <label class="fg-campo">${porUnidades(p) ? 'Unidades que quedan' : 'Kilos que quedan'}
+          <input type="text" class="num" inputmode="${porUnidades(p) ? 'numeric' : 'decimal'}" data-cambio="quedaban" placeholder="0" autocomplete="off">
+        </label>
+        <label class="fg-campo">Precio nuevo €/${u}
+          <input type="text" class="num" inputmode="decimal" data-cambio="pvp" placeholder="0,00" autocomplete="off">
+        </label>
+        <label class="fg-campo">Hora
+          <input type="time" data-cambio="hora">
+        </label>
+      </div>
+      <p class="error" role="alert" hidden></p>
+      <div class="botones">
+        <button type="submit" class="btn primario">Guardar cambio</button>
+        <button type="button" class="btn secundario" data-cerrar-cambio>Cancelar</button>
+      </div>
+    </form>`;
+}
+
+function repintarCambios(fila) {
+  fila.querySelector('.fg-cambios').innerHTML = bloqueCambios(producto(fila.dataset.id));
+  actualizarFila(fila);
+  pintarCifras();
+}
+
+function abrirCambio(fila) {
+  const form = fila.querySelector('.form-cambio');
+  form.reset();
+  form.querySelector('.error').hidden = true;
+  form.querySelector('[data-cambio="hora"]').value = fecha === hoyISO() ? horaAhora() : '';
+  form.hidden = false;
+  fila.querySelector('[data-abrir-cambio]').hidden = true;
+  form.querySelector('[data-cambio="quedaban"]').focus();
+}
+
+function cerrarCambio(fila) {
+  fila.querySelector('.form-cambio').hidden = true;
+  actualizarFila(fila);
+  fila.querySelector('[data-abrir-cambio]').focus();
+}
+
+function guardarCambio(form) {
+  const fila = form.closest('.fila-genero');
+  const p = producto(fila.dataset.id);
+  const l = lineaGenero(estado.dias, p, fecha);
+  const error = form.querySelector('.error');
+  const leer = (campo) => form.querySelector(`[data-cambio="${campo}"]`).value.trim();
+  const mostrar = (texto) => {
+    error.textContent = texto;
+    error.hidden = false;
+  };
+
+  const tq = leer('quedaban');
+  const tp = leer('pvp');
+  const quedaban = tq ? (porUnidades(p) ? aUnidades(tq) : aMilesimas(tq)) : null;
+  const pvp = tp ? aCentimos(tp) : null;
+  if (tq && quedaban == null) {
+    return mostrar(porUnidades(p) ? 'Las unidades tienen que ser un número entero, por ejemplo 12.' : 'Los kilos están mal escritos. Escribe solo números, por ejemplo 4,5.');
+  }
+  if (tp && pvp == null) return mostrar('El precio está mal escrito. Escribe solo números, por ejemplo 9,90.');
+
+  const cambio = { quedaban, pvp, hora: leer('hora') || null };
+  const revision = revisarCambio(l, cambio);
+  if (revision.error) return mostrar(textoErrorCambio(revision.error, p, l));
+  const raro = revision.avisos.find((a) => a.tipo === 'cambio-muy-grande');
+  if (raro && !confirm(`El precio nuevo (${fmtEuros(pvp)}) es muy distinto del que tenía (${fmtEuros(raro.antes)}).\n\n¿Está bien escrito?`)) return;
+
+  ponerCambio(estado.dias, p, fecha, cambio);
+  if (!comprobarGuardado(guardar())) return;
+  repintarCambios(fila);
+  fila.querySelector('[data-abrir-cambio]').focus();
+  avisar(`${p.nombre}: ahora a ${fmtEuros(pvp)}/${porUnidad(p)}.`);
 }
 
 // ---------- Pintar ----------
@@ -116,6 +237,7 @@ function filaGenero(p) {
       <input type="text" class="num" inputmode="decimal" data-campo="coste" value="${centimosATexto(l.coste)}" placeholder="0,00" autocomplete="off" aria-label="Coste de ${nombre}">
     </label>
     <p class="fg-nota" role="status"></p>
+    <div class="fg-cambios">${bloqueCambios(p)}</div>
   </div>`;
 }
 
@@ -159,6 +281,7 @@ function panelGenero() {
         </label>
       </div>
       <p class="ayuda">Apunta los kilos con los que empieza cada producto. El precio y el coste salen con los del último día: cámbialos solo si hoy son otros. Se guarda solo, mientras escribes.</p>
+      <p class="ayuda">Si a mitad del día subes o bajas un precio, pulsa <strong>Cambiar precio</strong> en ese producto y pesa lo que queda en el mostrador. Así la caja sigue cuadrando.</p>
     </section>
     ${secciones}
     <p class="ayuda" id="dia-sin-resultados" hidden>Ningún producto coincide con la búsqueda.</p>
@@ -266,6 +389,24 @@ export function prepararDia() {
       return;
     }
 
+    const fila = e.target.closest('.fila-genero');
+    if (fila && e.target.closest('[data-abrir-cambio]')) return abrirCambio(fila);
+    if (fila && e.target.closest('[data-cerrar-cambio]')) return cerrarCambio(fila);
+    const quitar = e.target.closest('[data-quitar-cambio]');
+    if (fila && quitar) {
+      const p = producto(fila.dataset.id);
+      const indice = +quitar.dataset.quitarCambio;
+      const c = lineaGenero(estado.dias, p, fecha).cambios[indice];
+      if (!c || !confirm(`¿Quitar el cambio a ${fmtEuros(c.pvp)}/${porUnidad(p)}${c.hora ? ` de las ${c.hora}` : ''}?\n\nLo que se vendió después volverá a contar al precio anterior.`)) return;
+      quitarCambio(estado.dias, p, fecha, indice);
+      if (comprobarGuardado(guardar())) {
+        repintarCambios(fila);
+        fila.querySelector('[data-abrir-cambio]').focus();
+        avisar('Cambio de precio quitado.');
+      }
+      return;
+    }
+
     if (id === 'dia-borrar') {
       if (!estado.dias[fecha]) return avisar('Este día no tiene nada apuntado.');
       if (!confirm(`¿Borrar todo lo apuntado el ${fechaCorta(fecha)}?\n\nNo se puede deshacer.`)) return;
@@ -277,8 +418,18 @@ export function prepararDia() {
     }
   });
 
+  vista.addEventListener('submit', (e) => {
+    if (!e.target.matches('.form-cambio')) return;
+    e.preventDefault();
+    guardarCambio(e.target);
+  });
+
   vista.addEventListener('input', (e) => {
     const i = e.target;
+    if (i.dataset.cambio) {
+      i.closest('.form-cambio').querySelector('.error').hidden = true;
+      return;
+    }
 
     if (i.id === 'dia-buscar') return buscar(i.value);
 

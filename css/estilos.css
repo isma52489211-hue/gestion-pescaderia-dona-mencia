@@ -353,6 +353,21 @@ label.btn { margin: 0; font-size: 16px; }
   .fg-nombre { grid-column: 1; align-self: center; }
 }
 
+/* Cambios de precio durante el día */
+.fg-cambios { grid-column: 1 / -1; }
+.fc-titulo { margin: 8px 0 4px; font-weight: 900; color: var(--azul); }
+.lista-cambios { list-style: none; margin: 0 0 8px; padding: 0; }
+.lista-cambios li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; padding: 4px 0; border-top: 1px solid var(--borde); }
+.lista-cambios li:first-child { border-top: 0; }
+.lista-cambios li > span { flex: 1; min-width: 0; font-size: 15px; }
+.lista-cambios .importe { white-space: nowrap; }
+.lista-cambios .btn { min-height: 44px; padding: 0 12px; font-size: 14px; }
+.btn-cambio { margin-top: 4px; min-height: 44px; font-size: 15px; }
+.form-cambio { margin-top: 8px; padding: 12px; background: var(--blanco); border: 1px solid var(--azul); border-radius: var(--radio); }
+.form-cambio .ayuda { margin-bottom: 8px; }
+.fc-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 12px; }
+.form-cambio .error { margin: 0 0 12px; }
+
 .otros summary { min-height: 48px; display: flex; align-items: center; font-weight: 900; color: var(--azul); cursor: pointer; border-top: 1px solid var(--borde); }
 
 /* Total siempre a la vista mientras se baja por la lista */

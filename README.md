@@ -23,7 +23,7 @@ En el móvil se puede instalar desde el menú del navegador («Añadir a pantall
 1. Base de la app: marca, secciones y cálculos con pruebas automáticas. **Hecho.**
 2. Productos: catálogo con precio de venta y coste, y copia de seguridad. **Hecho.**
 3. Género del día: kilos, precio y coste con los que empieza cada producto. **Hecho.**
-4. Cambios de precio.
+4. Cambios de precio: a mitad del día, pesando lo que queda en el mostrador. **Hecho.**
 5. Cierre guiado a ciegas.
 6. Cuadre.
 7. Congelado.
@@ -49,7 +49,7 @@ Sin instalaciones ni compilación: HTML, CSS y JavaScript.
 ## Cálculos
 
 - Género: al apuntar los kilos de un producto, su precio y su coste quedan fijados para ese día. Se proponen los del último día y, si no hay, los habituales del catálogo.
-- Venta posible: todo el género al precio del día, menos la merma de limpieza. La ganancia posible solo se da si se conoce el precio y el coste de todo.
+- Venta posible: todo el género al precio del día, menos la merma de limpieza. Si el precio cambia durante el día, lo que había antes del cambio cuenta al precio de antes y lo que quedaba, al nuevo. La rebaja de un día no pasa al siguiente. La ganancia posible solo se da si se conoce el precio y el coste de todo.
 - Producto: `inicio − sobra − retiradas y mermas = vendido`, menos el % de merma de limpieza si lo tiene. Con cambios de precio, cada tramo se valora a su precio.
 - Un producto **sin contar** no es lo mismo que uno del que **no sobra nada**: mientras quede algo sin contar no hay cuadre.
 - Caja: `efectivo contado − fondo + gastos y retiradas de dinero + tarjeta + Bizum = cobrado`.

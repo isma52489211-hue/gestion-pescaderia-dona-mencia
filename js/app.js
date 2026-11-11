@@ -10,7 +10,7 @@ import { resumenGenero } from './nucleo/dia.js';
 import { hoyISO, fechaLarga } from './nucleo/fechas.js';
 import { fmtEuros, fmtKg, fmtUnidades } from './nucleo/numeros.js';
 
-export const VERSION = '0.3';
+export const VERSION = '0.4';
 
 // ---------- Plan de construcción ----------
 
@@ -18,7 +18,7 @@ const PASOS = [
   { titulo: 'Base de la app', texto: 'La marca, las secciones y los cálculos con sus pruebas automáticas.', hecho: true },
   { titulo: 'Productos', texto: 'Catálogo con precio de venta y coste de compra, y copia de seguridad.', hecho: true },
   { titulo: 'Género del día', texto: 'Kilos, coste y precio con los que empieza cada producto.', hecho: true },
-  { titulo: 'Cambios de precio', texto: 'Subir o bajar un precio a mitad del día sin descuadrar la caja.' },
+  { titulo: 'Cambios de precio', texto: 'Subir o bajar un precio a mitad del día sin descuadrar la caja.', hecho: true },
   { titulo: 'Cierre guiado a ciegas', texto: 'Producto a producto, sin casillas olvidadas, con retiradas, mermas y gastos detallados.' },
   { titulo: 'Cuadre', texto: 'Lo que debería haber frente a lo cobrado, con margen, ganancia y avisos.' },
   { titulo: 'Congelado', texto: 'Stock de la tienda y lista de reposición.' },
@@ -61,7 +61,7 @@ function pintarInicio() {
     const cantidad = [r.kilos ? fmtKg(r.kilos) : '', r.unidades ? fmtUnidades(r.unidades) : ''].filter(Boolean).join(' y ');
     bloque = `<div class="resultado ok">${ICONO.ok}
       <div><p class="grande">Género de hoy apuntado</p>
-      <p>${r.productos} ${r.productos === 1 ? 'producto' : 'productos'} · ${cantidad} · Venta posible ${fmtEuros(r.venta)}</p></div>
+      <p>${r.productos} ${r.productos === 1 ? 'producto' : 'productos'} · ${cantidad} · Venta posible ${fmtEuros(r.venta)}${r.cambios ? ` · ${r.cambios} ${r.cambios === 1 ? 'cambio' : 'cambios'} de precio` : ''}</p></div>
       <button type="button" class="btn secundario" data-ir="dia">Ver el día</button></div>`;
   }
 
