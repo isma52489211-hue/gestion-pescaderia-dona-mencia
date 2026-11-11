@@ -4,23 +4,17 @@
 import { aCentimos, aMilesimas, fmtEuros, fmtKg } from './nucleo/numeros.js';
 import { ventaProducto, compararCaja } from './nucleo/cuadre.js';
 
-export const VERSION = '0.1';
+import { $, ICONO } from './ui.js';
+import { protegerDatos } from './datos/almacen.js';
+import { pintarMas, prepararMas, abrirMenuMas } from './vistas/mas.js';
 
-const $ = (id) => document.getElementById(id);
-const svg = (cuerpo) => `<span class="icono"><svg viewBox="0 0 64 64" aria-hidden="true">${cuerpo}</svg></span>`;
-const ICONO = {
-  ok: svg('<circle cx="32" cy="32" r="22"/><path d="M22 33l7 7 14-16"/>'),
-  alerta: svg('<circle cx="32" cy="32" r="22"/><path d="M32 20v15"/><path d="M32 43v1"/>'),
-  reloj: svg('<circle cx="32" cy="32" r="22"/><path d="M32 20v13l8 5"/>'),
-  flecha: svg('<circle cx="32" cy="32" r="22"/><path d="M22 32h20M34 24l8 8-8 8"/>'),
-};
+export const VERSION = '0.2';
 
 // ---------- Plan de construcción ----------
 
 const PASOS = [
   { titulo: 'Base de la app', texto: 'La marca, las secciones y los cálculos con sus pruebas automáticas.', hecho: true },
-  { titulo: 'Nube y PIN', texto: 'Datos compartidos entre aparatos, cada persona con su PIN y registro de quién hace qué.' },
-  { titulo: 'Productos', texto: 'Catálogo con precio de venta y coste de compra.' },
+  { titulo: 'Productos', texto: 'Catálogo con precio de venta y coste de compra, y copia de seguridad.', hecho: true },
   { titulo: 'Género del día', texto: 'Kilos, coste y precio con los que empieza cada producto.' },
   { titulo: 'Cambios de precio', texto: 'Subir o bajar un precio a mitad del día sin descuadrar la caja.' },
   { titulo: 'Cierre guiado a ciegas', texto: 'Producto a producto, sin casillas olvidadas, con retiradas, mermas y gastos detallados.' },
@@ -28,6 +22,7 @@ const PASOS = [
   { titulo: 'Congelado', texto: 'Stock de la tienda y lista de reposición.' },
   { titulo: 'Resumen', texto: 'Semana y mes, con ganancia y exportación.' },
   { titulo: 'Plantilla con foto', texto: 'Rellenar el género con una foto de la hoja impresa.' },
+  { titulo: 'Nube y PIN', texto: 'Para el final, si decides aplicarlo: datos compartidos entre aparatos y cada persona con su PIN.' },
 ];
 
 function pintarPasos() {
@@ -81,22 +76,17 @@ const EN_OBRAS = {
   dia: {
     titulo: 'Día',
     texto: 'Aquí se apuntará cada día en tres pasos: el género con el que se empieza, el cierre de la tienda y el cuadre de la caja.',
-    pasos: 'Pasos 4 a 7',
+    pasos: 'Pasos 3 a 6',
   },
   congelado: {
     titulo: 'Congelado',
     texto: 'Aquí verás el stock de congelado de la tienda y la lista de lo que hay que reponer, lista para enviar por WhatsApp.',
-    pasos: 'Paso 8',
+    pasos: 'Paso 7',
   },
   resumen: {
     titulo: 'Resumen',
     texto: 'Aquí verás la semana y el mes: lo vendido, lo cobrado, la diferencia y la ganancia, por día y por producto.',
-    pasos: 'Paso 9',
-  },
-  mas: {
-    titulo: 'Más',
-    texto: 'Aquí estarán los productos, las personas con su PIN, los ajustes y el registro de cambios.',
-    pasos: 'Pasos 2 y 3',
+    pasos: 'Paso 8',
   },
 };
 
@@ -106,10 +96,7 @@ function pintarEnObras(nombre) {
     <div class="resultado pendiente">${ICONO.reloj}
       <div><p class="grande">Todavía en construcción</p><p>${s.texto}</p></div>
       <span class="etiqueta">${s.pasos}</span>
-    </div>
-    ${nombre === 'mas' ? `<section class="tarjeta"><h2>Sobre la app</h2>
-      <div class="linea"><span>Tienda</span><span class="importe">Doña Mencía</span></div>
-      <div class="linea"><span>Versión</span><span class="importe">${VERSION}</span></div></section>` : ''}`;
+    </div>`;
 }
 
 // ---------- Navegación ----------
@@ -123,16 +110,22 @@ function mostrarVista(nombre) {
   });
   for (const v of VISTAS) $('vista-' + v).hidden = v !== nombre;
   if (EN_OBRAS[nombre]) pintarEnObras(nombre);
+  if (nombre === 'mas') pintarMas(VERSION);
   window.scrollTo(0, 0);
 }
 
-document.querySelectorAll('.nav-btn').forEach((b) => b.addEventListener('click', () => mostrarVista(b.dataset.vista)));
+document.querySelectorAll('.nav-btn').forEach((b) => b.addEventListener('click', () => {
+  if (b.dataset.vista === 'mas') abrirMenuMas(); // el botón de abajo siempre lleva al menú, no a una subpágina
+  mostrarVista(b.dataset.vista);
+}));
 for (const id of ['demo-inicio', 'demo-pvp', 'demo-sobra', 'demo-cobrado']) $(id).addEventListener('input', pintarDemo);
 
 // ---------- Arranque ----------
 
 const hoy = new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 $('inicio-fecha').textContent = hoy;
+prepararMas();
+protegerDatos();
 pintarPasos();
 pintarDemo();
 mostrarVista('inicio');

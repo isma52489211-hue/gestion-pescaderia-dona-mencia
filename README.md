@@ -6,33 +6,36 @@ Parte de la experiencia de la app de Luque, corrigiendo sus puntos débiles: dat
 
 ## Decisiones
 
-- **Datos en la nube**, compartidos entre aparatos y usables sin internet.
-- **Cada persona con su PIN**: el dueño lo ve todo; el empleado solo hace el cierre. Queda registrado quién hace qué.
 - **Cuadre de género contra caja** (no hay báscula con total del día).
 - **Coste y ganancia**, **cambios de precio durante el día** y **gastos de caja detallados**.
 - El sobrante no pasa solo al día siguiente: cada día se apunta el género con el que se empieza.
+- Los productos **se archivan, no se borran**, para no romper los días ya apuntados.
+- **De momento los datos se guardan en el aparato**, con copia de seguridad descargable. La nube y los PIN se dejan para el final, por decidir.
 
 ## Plan por pasos
 
 1. Base de la app: marca, secciones y cálculos con pruebas automáticas. **Hecho.**
-2. Nube y PIN.
-3. Productos.
-4. Género del día.
-5. Cambios de precio.
-6. Cierre guiado a ciegas.
-7. Cuadre.
-8. Congelado.
-9. Resumen.
-10. Plantilla con foto.
+2. Productos: catálogo con precio de venta y coste, y copia de seguridad. **Hecho.**
+3. Género del día.
+4. Cambios de precio.
+5. Cierre guiado a ciegas.
+6. Cuadre.
+7. Congelado.
+8. Resumen.
+9. Plantilla con foto.
+10. Nube y PIN (por decidir): datos compartidos entre aparatos y cada persona con su PIN.
 
 ## Cómo está hecha
 
 Sin instalaciones ni compilación: HTML, CSS y JavaScript.
 
-- `index.html`, `css/estilos.css`, `js/app.js`: la pantalla.
+- `index.html`, `css/estilos.css`, `js/app.js`, `js/ui.js`, `js/vistas/`: la pantalla.
+- `js/datos/almacen.js`: dónde se guardan los datos. Es el único archivo que habría que cambiar para pasar a la nube.
 - `js/nucleo/`: los cálculos, separados de la pantalla para poder probarlos.
   - `numeros.js`: el dinero se guarda en céntimos enteros y las cantidades en milésimas enteras, para que las cuentas sean exactas.
   - `cuadre.js`: lo vendido por producto, lo cobrado en caja y la comparación.
+  - `productos.js`: reglas del catálogo (nombres sin repetir, ganancia por kilo, archivar).
+  - `copia.js`: comprobación de una copia de seguridad antes de restaurarla.
 - `pruebas/`: pruebas automáticas de los cálculos.
 - `sw.js`, `manifest.webmanifest`: app instalable y usable sin conexión.
 

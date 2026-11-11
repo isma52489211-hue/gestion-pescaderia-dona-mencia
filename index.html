@@ -100,6 +100,61 @@
     <section id="vista-mas" class="vista" hidden></section>
   </main>
 
+  <!-- Ficha para añadir o cambiar un producto -->
+  <dialog id="ficha" class="ficha" aria-labelledby="ficha-titulo">
+    <form id="ficha-form" novalidate>
+      <h2 id="ficha-titulo"></h2>
+      <label>Nombre
+        <input type="text" id="f-nombre" autocomplete="off" aria-describedby="e-nombre">
+        <small class="error" id="e-nombre" hidden></small>
+      </label>
+      <div class="rejilla">
+        <label>Tipo
+          <select id="f-tipo" aria-describedby="e-tipo">
+            <option value="fresco">Pescado fresco</option>
+            <option value="gordo">Pescado gordo</option>
+            <option value="marisco">Marisco</option>
+            <option value="congelado">Congelado</option>
+          </select>
+          <small class="error" id="e-tipo" hidden></small>
+        </label>
+        <label>Se vende
+          <select id="f-unidad">
+            <option value="kg">Al peso (kg)</option>
+            <option value="ud">Por unidades</option>
+          </select>
+        </label>
+      </div>
+      <label id="l-formato" hidden>Formato
+        <input type="text" id="f-formato" autocomplete="off" placeholder="Ej.: bolsa de 1 kg">
+      </label>
+      <div class="rejilla">
+        <label><span id="t-pvp">Precio de venta habitual (€/kg)</span>
+          <input type="text" class="num" inputmode="decimal" id="f-pvp" placeholder="0,00" autocomplete="off" aria-describedby="e-pvp">
+          <small class="error" id="e-pvp" hidden></small>
+        </label>
+        <label><span id="t-coste">Coste de compra habitual (€/kg)</span>
+          <input type="text" class="num" inputmode="decimal" id="f-coste" placeholder="0,00" autocomplete="off" aria-describedby="e-coste">
+          <small class="error" id="e-coste" hidden></small>
+        </label>
+      </div>
+      <label>Merma de limpieza (%)
+        <input type="text" class="num" inputmode="decimal" id="f-merma" placeholder="0" autocomplete="off" aria-describedby="a-merma e-mermaPct">
+        <small class="ayuda-campo" id="a-merma">Solo si se pierde peso al limpiarlo (salmón, atún). Si no, déjalo vacío.</small>
+        <small class="error" id="e-mermaPct" hidden></small>
+      </label>
+      <p class="ayuda">El precio y el coste son los habituales: cada día podrás cambiarlos al apuntar el género.</p>
+      <div id="f-ganancia" role="status" aria-live="polite"></div>
+      <div class="botones ficha-botones">
+        <button type="submit" class="btn primario">Guardar</button>
+        <button type="button" class="btn secundario" id="f-cancelar">Cancelar</button>
+        <button type="button" class="btn peligro" id="f-archivar">Archivar producto</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="aviso" class="toast" role="status" aria-live="polite"></div>
+
   <script type="module" src="js/app.js"></script>
 </body>
 </html>

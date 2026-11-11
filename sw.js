@@ -1,18 +1,27 @@
 // Caja Doña Mencía — permite instalar la app y usarla sin conexión.
 // Primero intenta la red (para recibir siempre la última versión) y, si no hay, usa lo guardado.
 
-const CACHE = 'caja-dona-mencia-v1';
+const CACHE = 'caja-dona-mencia-v2';
 const ARCHIVOS = [
   './',
   'index.html',
   'css/estilos.css',
   'js/app.js',
+  'js/ui.js',
+  'js/datos/almacen.js',
+  'js/vistas/mas.js',
+  'js/nucleo/productos.js',
+  'js/nucleo/copia.js',
   'js/nucleo/numeros.js',
   'js/nucleo/cuadre.js',
   'manifest.webmanifest',
   'assets/logo-adolfo.png',
   'assets/icono-192.png',
   'assets/icono-512.png',
+  'assets/iconos/frescura.svg',
+  'assets/iconos/preparacion.svg',
+  'assets/iconos/calidad.svg',
+  'assets/iconos/frio.svg',
 ];
 
 self.addEventListener('install', (e) => {

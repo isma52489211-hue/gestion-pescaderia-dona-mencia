@@ -194,6 +194,97 @@ input.num { font-family: var(--letra-dato); font-weight: 700; font-size: 18px; t
 .paso-obra.hecho .etiqueta { color: var(--ok); }
 .paso-obra.siguiente .etiqueta { color: var(--azul); background: var(--azul-claro); }
 
+/* ---------- Avisos ---------- */
+
+.aviso {
+  display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap;
+  padding: 12px 16px; margin-bottom: 16px;
+  background: var(--sobra-fondo); color: var(--tinta);
+  border: 1px solid var(--sobra); border-radius: var(--radio);
+}
+.aviso > div { flex: 1; min-width: 200px; }
+.aviso p { margin: 0; font-size: 14px; }
+.aviso .icono { width: 28px; height: 28px; color: var(--sobra); }
+.aviso.ok { background: var(--ok-fondo); border-color: var(--ok); }
+.aviso.ok .icono { color: var(--ok); }
+
+.toast {
+  position: fixed; left: 50%; bottom: 88px; z-index: 60;
+  transform: translate(-50%, 16px);
+  max-width: calc(100% - 32px); padding: 12px 20px;
+  background: var(--tinta); color: var(--blanco); font-weight: 900;
+  border-radius: var(--radio);
+  opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
+}
+.toast.visible { opacity: 1; transform: translate(-50%, 0); }
+
+.sr-solo { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.botones { display: flex; flex-wrap: wrap; gap: 12px; }
+label.btn { margin: 0; font-size: 16px; }
+
+/* ---------- Menú de «Más» ---------- */
+
+.menu { margin-bottom: 24px; }
+.menu-fila, .fila-producto {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  text-align: left; font: inherit; color: var(--tinta); cursor: pointer;
+  background: var(--blanco);
+}
+.menu-fila { min-height: 72px; padding: 12px 16px; border: 1px solid var(--borde); border-radius: var(--radio); }
+.menu-fila:hover, .fila-producto:hover { background: var(--azul-claro); }
+.menu-fila .icono { color: var(--azul); width: 32px; height: 32px; }
+.menu-txt, .fila-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.menu-txt small { font-size: 14px; color: var(--suave); }
+.menu-flecha { flex: none; font-size: 26px; line-height: 1; color: var(--azul); }
+
+.volver {
+  min-height: 44px; padding: 0 8px 0 0; margin-bottom: 4px;
+  background: none; border: 0; font: 900 16px var(--letra); color: var(--azul); cursor: pointer;
+}
+
+/* ---------- Productos ---------- */
+
+.barra-productos { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.barra-productos input { flex: 1; min-width: 180px; margin: 0; }
+@media (max-width: 599px) { .barra-productos .btn { width: 100%; } }
+
+.cat-cab { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.cat-cab img { width: 44px; height: 44px; flex: none; }
+.cat-cab h2 { margin: 0; }
+.cat-cab .ayuda { margin: 0; }
+
+.fila-producto { min-height: 64px; padding: 10px 0; border: 0; border-top: 1px solid var(--borde); border-radius: 0; }
+.fila-txt strong small { font-weight: 400; font-size: 14px; color: var(--suave); }
+.fila-datos { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; font-size: 14px; color: var(--suave); }
+.fila-datos .dato { font-family: var(--letra-dato); font-weight: 700; font-size: 16px; color: var(--tinta); }
+.etiqueta.falta-dato { color: var(--sobra); background: var(--sobra-fondo); font-size: 14px; }
+.en-rojo { color: var(--falta); font-weight: 900; }
+
+.archivo summary { min-height: 44px; display: flex; align-items: center; font-weight: 900; color: var(--azul); cursor: pointer; }
+.archivo .linea { align-items: center; }
+.archivo .linea small { color: var(--suave); }
+
+/* ---------- Ficha (ventana para añadir o cambiar) ---------- */
+
+.ficha {
+  width: min(560px, calc(100% - 32px)); max-height: calc(100% - 32px);
+  padding: 24px; color: var(--tinta);
+  border: 1px solid var(--borde); border-radius: var(--radio);
+}
+.ficha::backdrop { background: rgba(23, 32, 68, .6); }
+.ficha h2 { margin-bottom: 16px; }
+.ficha-botones { margin-top: 16px; }
+.ficha-botones .peligro { margin-left: auto; }
+@media (max-width: 599px) {
+  .ficha { padding: 16px; }
+  .ficha-botones .btn { width: 100%; }
+}
+.ayuda-campo { display: block; margin-top: 4px; font-weight: 400; font-size: 14px; color: var(--suave); }
+.error { display: block; margin-top: 4px; font-size: 14px; font-weight: 900; color: var(--falta); }
+.error::before { content: "⚠ "; }
+[hidden] { display: none !important; }
+
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
 }
