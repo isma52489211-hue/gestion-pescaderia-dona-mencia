@@ -1,0 +1,199 @@
+/* Caja Doña Mencía — identidad Pescaderías Adolfo */
+
+:root {
+  --azul: #22326a;
+  --coral: #cc4d51;
+  --blanco: #ffffff;
+  --gris: #f5f5f5;
+  --tinta: #172044;
+  --suave: #4f5a78;
+  --borde: #dde1ea;
+  --borde-campo: #8590ad;
+  --azul-claro: #e9ecf4;
+
+  /* Estados funcionales (siempre acompañados de icono y texto) */
+  --ok: #1d6b45;
+  --ok-fondo: #e6f2ec;
+  --falta: #b3261e;
+  --falta-fondo: #fbeae8;
+  --sobra: #7a5300;
+  --sobra-fondo: #fdf3df;
+
+  --radio: 6px;
+  --control: 48px;
+  --letra: "Lato", Arial, sans-serif;
+  --letra-dato: "Source Code Pro", Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--letra);
+  font-size: 16px;
+  line-height: 1.5;
+  background: var(--gris);
+  color: var(--tinta);
+}
+
+h1 { font-weight: 900; font-size: 30px; line-height: 1.15; margin: 0 0 24px; color: var(--azul); }
+h2 { font-weight: 900; font-size: 20px; line-height: 1.2; margin: 0 0 8px; color: var(--azul); }
+p { margin: 0 0 8px; }
+strong { font-weight: 900; }
+
+:focus-visible { outline: 3px solid var(--coral); outline-offset: 2px; }
+
+/* ---------- Cabecera ---------- */
+
+.cabecera { background: var(--azul); color: var(--blanco); padding: 8px 24px 16px; }
+.cabecera-in { max-width: 1080px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; }
+.logo-marco { width: 300px; height: 100px; overflow: hidden; flex: none; }
+.logo-marco img { display: block; width: 400px; height: auto; }
+.tienda { display: flex; flex-direction: column; text-align: right; }
+.dato-etiqueta { font-family: var(--letra-dato); font-weight: 700; font-size: 14px; letter-spacing: .08em; text-transform: uppercase; }
+
+@media (max-width: 599px) {
+  .tienda { text-align: left; flex-direction: row; flex-wrap: wrap; gap: 0 12px; align-items: baseline; }
+}
+
+/* ---------- Navegación ---------- */
+
+.nav { background: var(--blanco); border-bottom: 1px solid var(--borde); }
+.nav-in { max-width: 1080px; margin: 0 auto; display: flex; gap: 4px; padding: 0 24px; }
+.nav-btn {
+  display: flex; align-items: center; gap: 8px;
+  min-height: 56px; padding: 0 16px;
+  background: none; border: 0; border-bottom: 3px solid transparent;
+  font: inherit; color: var(--suave); cursor: pointer;
+}
+.nav-btn svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.nav-btn[aria-current="page"] { color: var(--azul); font-weight: 900; border-bottom-color: var(--coral); }
+
+@media (max-width: 899px) {
+  .nav {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+    border-top: 1px solid var(--borde); border-bottom: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .nav-in { padding: 0; gap: 0; }
+  .nav-btn {
+    flex: 1; flex-direction: column; justify-content: center; gap: 2px;
+    min-height: 64px; padding: 6px 2px; font-size: 14px;
+    border-bottom: 0; border-top: 3px solid transparent;
+  }
+  .nav-btn[aria-current="page"] { border-top-color: var(--coral); }
+  .nav-btn span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+}
+
+/* ---------- Estructura ---------- */
+
+main { max-width: 1080px; margin: 0 auto; padding: 24px 24px 120px; }
+@media (min-width: 900px) { main { padding: 40px 48px 64px; } }
+
+.sobretitulo { font-family: var(--letra-dato); font-weight: 700; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: var(--suave); margin-bottom: 4px; }
+
+.tarjeta {
+  background: var(--blanco);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+@media (max-width: 599px) { .tarjeta { padding: 16px; margin-bottom: 16px; } }
+
+.ayuda { color: var(--suave); font-size: 14px; margin-bottom: 16px; }
+.rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0 16px; }
+
+.etiqueta {
+  flex: none; align-self: center;
+  font-family: var(--letra-dato); font-weight: 700; font-size: 14px;
+  padding: 2px 8px; border: 1px solid currentColor; border-radius: var(--radio);
+  white-space: nowrap;
+}
+
+/* ---------- Formularios ---------- */
+
+label { display: block; font-size: 14px; font-weight: 900; color: var(--tinta); margin-bottom: 16px; }
+input, select, textarea {
+  display: block; width: 100%;
+  min-height: var(--control);
+  margin-top: 6px;
+  padding: 10px 12px;
+  font: 400 16px/1.3 var(--letra);
+  color: var(--tinta);
+  background: var(--blanco);
+  border: 1px solid var(--borde-campo);
+  border-radius: var(--radio);
+}
+input:focus, select:focus, textarea:focus { border-color: var(--azul); outline: 2px solid var(--azul); outline-offset: 0; }
+input.num { font-family: var(--letra-dato); font-weight: 700; font-size: 18px; text-align: right; }
+
+/* ---------- Botones ---------- */
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: var(--control); padding: 0 20px;
+  font: 900 16px/1.2 var(--letra);
+  border-radius: var(--radio);
+  border: 2px solid var(--azul);
+  cursor: pointer; text-decoration: none; margin: 0;
+}
+.btn.primario { background: var(--azul); color: var(--blanco); }
+.btn.primario:hover { background: var(--tinta); border-color: var(--tinta); }
+.btn.secundario { background: var(--blanco); color: var(--azul); }
+.btn.secundario:hover { background: var(--azul-claro); }
+.btn.peligro { background: var(--blanco); color: var(--falta); border-color: var(--falta); }
+
+/* ---------- Resultado y avisos ---------- */
+
+.icono { flex: none; width: 40px; height: 40px; }
+.icono svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+
+.resultado {
+  display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap;
+  padding: 16px 24px; margin-bottom: 24px;
+  background: var(--blanco); color: var(--tinta);
+  border: 1px solid var(--borde); border-left: 6px solid var(--azul);
+  border-radius: var(--radio);
+}
+.resultado > div { flex: 1; min-width: 200px; }
+.resultado p { margin: 0; }
+.resultado .grande { font-weight: 900; font-size: 22px; line-height: 1.25; margin-bottom: 4px; }
+.resultado .icono { color: var(--azul); }
+.resultado.ok { background: var(--ok-fondo); border-color: var(--ok); }
+.resultado.ok .grande, .resultado.ok .icono { color: var(--ok); }
+.resultado.falta { background: var(--falta-fondo); border-color: var(--falta); }
+.resultado.falta .grande, .resultado.falta .icono { color: var(--falta); }
+.resultado.sobra { background: var(--sobra-fondo); border-color: var(--sobra); }
+.resultado.sobra .grande, .resultado.sobra .icono { color: var(--sobra); }
+.tarjeta .resultado { margin-bottom: 0; }
+@media (max-width: 599px) { .resultado { padding: 16px; gap: 12px; } }
+
+/* ---------- Líneas de datos ---------- */
+
+.linea { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-top: 1px solid var(--borde); }
+.linea:first-of-type { border-top: 0; }
+.importe { font-family: var(--letra-dato); font-weight: 700; }
+
+/* ---------- Plan de construcción ---------- */
+
+.pasos-obra { list-style: none; margin: 0; padding: 0; }
+.paso-obra { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-top: 1px solid var(--borde); }
+.paso-obra:first-child { border-top: 0; }
+.paso-num {
+  flex: none; width: 32px; height: 32px; display: grid; place-items: center;
+  border: 2px solid var(--azul); border-radius: 50%;
+  font-family: var(--letra-dato); font-weight: 700; font-size: 14px; color: var(--azul);
+}
+.paso-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.paso-txt small { font-size: 14px; color: var(--suave); }
+.paso-obra .etiqueta { color: var(--suave); }
+.paso-obra.hecho .paso-num { background: var(--azul); color: var(--blanco); }
+.paso-obra.hecho .etiqueta { color: var(--ok); }
+.paso-obra.siguiente .etiqueta { color: var(--azul); background: var(--azul-claro); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}
