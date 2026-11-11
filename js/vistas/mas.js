@@ -22,8 +22,9 @@ export function pintarMas(v) {
   else pintarMenu();
 }
 
-export function abrirMenuMas() {
-  pagina = 'menu';
+export function abrirPaginaMas(nombre) {
+  pagina = nombre;
+  busqueda = '';
 }
 
 // ---------- Menú ----------

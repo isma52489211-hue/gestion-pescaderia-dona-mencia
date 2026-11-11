@@ -22,7 +22,7 @@ En el móvil se puede instalar desde el menú del navegador («Añadir a pantall
 
 1. Base de la app: marca, secciones y cálculos con pruebas automáticas. **Hecho.**
 2. Productos: catálogo con precio de venta y coste, y copia de seguridad. **Hecho.**
-3. Género del día.
+3. Género del día: kilos, precio y coste con los que empieza cada producto. **Hecho.**
 4. Cambios de precio.
 5. Cierre guiado a ciegas.
 6. Cuadre.
@@ -40,6 +40,7 @@ Sin instalaciones ni compilación: HTML, CSS y JavaScript.
 - `js/nucleo/`: los cálculos, separados de la pantalla para poder probarlos.
   - `numeros.js`: el dinero se guarda en céntimos enteros y las cantidades en milésimas enteras, para que las cuentas sean exactas.
   - `cuadre.js`: lo vendido por producto, lo cobrado en caja y la comparación.
+  - `dia.js`: el género de cada día (precio propuesto, avisos, resumen) y `fechas.js`.
   - `productos.js`: reglas del catálogo (nombres sin repetir, ganancia por kilo, archivar).
   - `copia.js`: comprobación de una copia de seguridad antes de restaurarla.
 - `pruebas/`: pruebas automáticas de los cálculos.
@@ -47,6 +48,8 @@ Sin instalaciones ni compilación: HTML, CSS y JavaScript.
 
 ## Cálculos
 
+- Género: al apuntar los kilos de un producto, su precio y su coste quedan fijados para ese día. Se proponen los del último día y, si no hay, los habituales del catálogo.
+- Venta posible: todo el género al precio del día, menos la merma de limpieza. La ganancia posible solo se da si se conoce el precio y el coste de todo.
 - Producto: `inicio − sobra − retiradas y mermas = vendido`, menos el % de merma de limpieza si lo tiene. Con cambios de precio, cada tramo se valora a su precio.
 - Un producto **sin contar** no es lo mismo que uno del que **no sobra nada**: mientras quede algo sin contar no hay cuadre.
 - Caja: `efectivo contado − fondo + gastos y retiradas de dinero + tarjeta + Bizum = cobrado`.

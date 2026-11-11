@@ -209,7 +209,7 @@ input.num { font-family: var(--letra-dato); font-weight: 700; font-size: 18px; t
 .aviso.ok .icono { color: var(--ok); }
 
 .toast {
-  position: fixed; left: 50%; bottom: 88px; z-index: 60;
+  position: fixed; left: 50%; bottom: 160px; z-index: 60;
   transform: translate(-50%, 16px);
   max-width: calc(100% - 32px); padding: 12px 20px;
   background: var(--tinta); color: var(--blanco); font-weight: 900;
@@ -284,6 +284,88 @@ label.btn { margin: 0; font-size: 16px; }
 .error { display: block; margin-top: 4px; font-size: 14px; font-weight: 900; color: var(--falta); }
 .error::before { content: "⚠ "; }
 [hidden] { display: none !important; }
+
+/* ---------- Día: fecha y pasos ---------- */
+
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-icono {
+  width: var(--control); height: var(--control); flex: none;
+  background: var(--blanco); color: var(--azul);
+  border: 2px solid var(--azul); border-radius: var(--radio);
+  font-size: 26px; line-height: 1; cursor: pointer;
+}
+.barra-fecha { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; }
+.barra-fecha input { flex: 1; min-width: 0; margin: 0; font-weight: 900; }
+@media (max-width: 599px) {
+  .barra-fecha { gap: 6px; }
+  .barra-fecha input { padding: 8px 6px; }
+  .barra-fecha .btn { padding: 0 12px; }
+}
+.h1-fecha { font-size: 24px; margin-bottom: 16px; }
+.h1-fecha::first-letter { text-transform: uppercase; }
+
+.pasos { list-style: none; padding: 0; margin: 0 0 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.pasos button {
+  width: 100%; min-height: 64px; display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; text-align: left; cursor: pointer;
+  background: var(--blanco); color: var(--tinta);
+  border: 1px solid var(--borde); border-radius: var(--radio); font: inherit;
+}
+.pasos .paso-txt { line-height: 1.2; }
+.pasos .paso-txt small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pasos button[aria-current="step"] { border: 2px solid var(--azul); box-shadow: inset 0 -3px 0 var(--coral); }
+.pasos button.hecho .paso-num { background: var(--azul); color: var(--blanco); }
+@media (max-width: 599px) {
+  .pasos button { flex-direction: column; align-items: center; text-align: center; gap: 4px; padding: 8px 4px; }
+  .pasos .paso-txt { align-items: center; max-width: 100%; }
+}
+
+/* ---------- Cifras ---------- */
+
+.cifras { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-bottom: 16px; }
+.cifra { background: var(--blanco); border: 1px solid var(--borde); border-radius: var(--radio); padding: 12px 16px; display: flex; flex-direction: column; }
+.cifra > small { font-size: 14px; color: var(--suave); }
+.cifra strong { font-family: var(--letra-dato); font-weight: 700; font-size: 20px; color: var(--azul); }
+.cifra strong small { display: block; font-family: var(--letra); font-weight: 400; font-size: 14px; color: var(--sobra); }
+@media (max-width: 599px) { .cifras { grid-template-columns: 1fr 1fr; } }
+
+/* ---------- Género del día ---------- */
+
+.fila-genero {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px 8px;
+  padding: 12px 0 12px 12px; border-top: 1px solid var(--borde);
+  border-left: 4px solid transparent;
+}
+.fila-genero.con-dato { border-left-color: var(--azul); background: var(--azul-claro); }
+.fg-nombre { grid-column: 1 / -1; margin: 0; }
+.fg-nombre small { font-size: 14px; color: var(--suave); }
+.fg-campo { margin: 0; font-weight: 400; color: var(--suave); min-width: 0; }
+.fg-campo input { margin-top: 2px; padding: 8px; }
+.fg-campo input[aria-invalid="true"] { border: 2px solid var(--falta); background: var(--falta-fondo); }
+.fg-nota { grid-column: 1 / -1; margin: 0; font-size: 14px; color: var(--suave); min-height: 0; }
+.fg-nota:empty { display: none; }
+.fg-nota.ojo { color: var(--sobra); font-weight: 900; }
+.fg-nota.ojo::before, .fg-nota.mal::before { content: "⚠ "; }
+.fg-nota.mal { color: var(--falta); font-weight: 900; }
+.fila-genero.con-dato { padding-right: 8px; }
+@media (min-width: 700px) {
+  .fila-genero { grid-template-columns: minmax(180px, 1.4fr) repeat(3, 1fr); align-items: end; gap: 4px 12px; }
+  .fg-nombre { grid-column: 1; align-self: center; }
+}
+
+.otros summary { min-height: 48px; display: flex; align-items: center; font-weight: 900; color: var(--azul); cursor: pointer; border-top: 1px solid var(--borde); }
+
+/* Total siempre a la vista mientras se baja por la lista */
+.barra-total {
+  position: sticky; bottom: 16px; z-index: 20;
+  padding: 12px 16px; margin-bottom: 16px;
+  background: var(--azul); color: var(--blanco);
+  border-radius: var(--radio); border-bottom: 3px solid var(--coral);
+  font-size: 15px; text-align: center;
+}
+@media (max-width: 899px) { .barra-total { bottom: calc(76px + env(safe-area-inset-bottom)); } }
+
+.acciones { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; margin: 8px 0 24px; }
 
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
