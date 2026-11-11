@@ -4,6 +4,12 @@ Aplicación web para controlar la caja de la tienda de Doña Mencía **a partir 
 
 Parte de la experiencia de la app de Luque, corrigiendo sus puntos débiles: datos en un solo aparato, sin usuarios ni permisos, y casillas vacías que contaban como «vendido todo».
 
+## Cómo usarla
+
+**En el móvil, la tablet o el ordenador:** https://isma52489211-hue.github.io/gestion-pescaderia-dona-mencia/
+
+En el móvil se puede instalar desde el menú del navegador («Añadir a pantalla de inicio») y funciona sin conexión. Los datos se guardan en cada aparato: no se comparten entre ellos.
+
 ## Decisiones
 
 - **Cuadre de género contra caja** (no hay báscula con total del día).
