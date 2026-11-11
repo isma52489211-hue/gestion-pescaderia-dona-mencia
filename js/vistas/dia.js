@@ -8,7 +8,9 @@ import {
   precioActual, revisarCambio, ponerCambio, quitarCambio,
 } from '../nucleo/dia.js';
 import { aCentimos, aMilesimas, aUnidades, fmtEuros, fmtKg, fmtUnidades, centimosATexto, milesimasATexto } from '../nucleo/numeros.js';
-import { hoyISO, sumarDias, esFecha, fechaLarga, fechaCorta } from '../nucleo/fechas.js';
+import { hoyISO, sumarDias, esFecha, fechaLarga, fechaCorta, abreEseDia } from '../nucleo/fechas.js';
+import { estadoCierre } from '../nucleo/cierre.js';
+import { pintarCierre, prepararCierre, actualizarCierre } from './cierre.js';
 
 // El congelado lleva su propio control de stock (sección «Congelado»)
 const TIPOS_GENERO = ['fresco', 'gordo', 'marisco'];
@@ -66,6 +68,19 @@ function cantidades(r) {
 
 // ---------- Partes que se actualizan mientras se escribe ----------
 
+// Lo que dice cada botón de paso: cuántos productos, cuántos contados, si está terminado
+function pintarEstadoPasos() {
+  const n = resumenGenero(estado.dias, estado.productos, fecha).productos;
+  const e = estadoCierre(estado.dias, estado.productos, fecha);
+  const poner = (paso, texto, hecho) => {
+    $(`estado-paso-${paso}`).textContent = texto;
+    document.querySelector(`.pasos [data-paso="${paso}"]`).classList.toggle('hecho', hecho);
+  };
+  poner(1, n ? `${n} ${n === 1 ? 'producto' : 'productos'}` : 'Pendiente', n > 0);
+  poner(2, e.cerrado ? `Terminado ${e.cerrado.hora}` : n ? `${e.contados} de ${e.productos} contados` : 'Pendiente', !!e.cerrado);
+  poner(3, e.cerrado ? 'En construcción' : 'Tras el cierre', false);
+}
+
 function pintarCifras() {
   const r = resumenGenero(estado.dias, estado.productos, fecha);
   const cifras = [
@@ -89,8 +104,7 @@ function pintarCifras() {
     ? `<div class="aviso">${ICONO.alerta}<div>${faltan.map((t) => `<p>${t}</p>`).join('')}</div></div>`
     : '';
 
-  $('estado-paso-1').textContent = r.productos ? `${r.productos} ${r.productos === 1 ? 'producto' : 'productos'}` : 'Pendiente';
-  document.querySelector('.pasos [data-paso="1"]').classList.toggle('hecho', r.productos > 0);
+  pintarEstadoPasos();
 
   for (const tipo of TIPOS_GENERO) {
     const hueco = document.querySelector(`[data-conteo="${tipo}"]`);
@@ -250,6 +264,7 @@ function panelGenero() {
       <button type="button" class="btn primario" data-ir="productos">Ir a productos</button></div>`;
   }
 
+  const cerrado = estado.dias[fecha]?.cerrado;
   const secciones = TIPOS_GENERO.map((tipo) => {
     const deTipo = lista.filter((p) => p.tipo === tipo).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
     if (!deTipo.length) return '';
@@ -269,11 +284,14 @@ function panelGenero() {
     </section>`;
   }).join('');
 
-  return `<section class="tarjeta">
+  return `${cerrado ? `<div class="aviso ok">${ICONO.ok}
+      <div><strong>Cierre terminado a las ${escapar(cerrado.hora)}</strong><p>El género de este día ya no se puede cambiar. Si hay que corregir algo, reabre el cierre en el paso 2.</p></div>
+      <button type="button" class="btn secundario" data-paso-ir="2">Ir al cierre</button></div>` : ''}
+    <section class="tarjeta">
       <h2>Para empezar el día</h2>
       <div class="rejilla">
         <label>Fondo de caja al empezar (€)
-          <input type="text" class="num" inputmode="decimal" id="dia-fondo" value="${centimosATexto(estado.dias[fecha]?.caja?.fondo)}" placeholder="0,00" autocomplete="off" aria-describedby="e-fondo">
+          <input type="text" class="num" inputmode="decimal" id="dia-fondo"${cerrado ? ' disabled' : ''} value="${centimosATexto(estado.dias[fecha]?.caja?.fondo)}" placeholder="0,00" autocomplete="off" aria-describedby="e-fondo">
           <small class="error" id="e-fondo" hidden>Escribe solo un número, por ejemplo 150.</small>
         </label>
         <label>Buscar producto
@@ -283,7 +301,7 @@ function panelGenero() {
       <p class="ayuda">Apunta los kilos con los que empieza cada producto. El precio y el coste salen con los del último día: cámbialos solo si hoy son otros. Se guarda solo, mientras escribes.</p>
       <p class="ayuda">Si a mitad del día subes o bajas un precio, pulsa <strong>Cambiar precio</strong> en ese producto y pesa lo que queda en el mostrador. Así la caja sigue cuadrando.</p>
     </section>
-    ${secciones}
+    <fieldset class="sin-marco"${cerrado ? ' disabled' : ''}>${secciones}</fieldset>
     <p class="ayuda" id="dia-sin-resultados" hidden>Ningún producto coincide con la búsqueda.</p>
     <div class="barra-total" id="dia-total" role="status"></div>
     <h2>Resumen del género</h2>
@@ -295,8 +313,7 @@ function panelGenero() {
 }
 
 const EN_OBRAS = {
-  2: ['Cierre', 'Aquí la tienda apuntará, producto a producto, lo que sobra al cerrar, las retiradas, las mermas y la caja.'],
-  3: ['Cuadre', 'Aquí saldrá lo que debería haber en caja frente a lo cobrado, y la ganancia del día.'],
+  3: ['Cuadre', 'Aquí saldrá, al terminar el cierre, lo que debería haber en caja frente a lo cobrado, y la ganancia del día.'],
 };
 
 export function pintarDia() {
@@ -304,6 +321,8 @@ export function pintarDia() {
   const otroDia = fecha === hoy ? '' : `<div class="aviso">${ICONO.alerta}
       <div><strong>Estás viendo otro día, no hoy</strong><p>Lo que apuntes aquí se guarda en el ${fechaCorta(fecha)}.</p></div>
       <button type="button" class="btn secundario" id="dia-hoy-aviso">Ir a hoy</button></div>`;
+  const cerrada = abreEseDia(fecha) || estado.dias[fecha] ? '' : `<div class="aviso">${ICONO.reloj}
+      <div><strong>Este día la tienda no abre</strong><p>La tienda abre de martes a sábado. Si aun así se ha abierto, se puede apuntar igual.</p></div></div>`;
 
   $('vista-dia').innerHTML = `<div class="barra-fecha">
       <button type="button" class="btn-icono" id="dia-anterior" aria-label="Día anterior">‹</button>
@@ -312,11 +331,11 @@ export function pintarDia() {
       <button type="button" class="btn secundario" id="dia-hoy"${fecha === hoy ? ' disabled' : ''}>Hoy</button>
     </div>
     <h1 class="h1-fecha">${fechaLarga(fecha)}</h1>
-    ${otroDia}
+    ${otroDia}${cerrada}
     <ol class="pasos" aria-label="Pasos del día">
       <li><button type="button" data-paso="1"><span class="paso-num">1</span><span class="paso-txt"><strong>Género</strong><small id="estado-paso-1"></small></span></button></li>
-      <li><button type="button" data-paso="2"><span class="paso-num">2</span><span class="paso-txt"><strong>Cierre</strong><small>En construcción</small></span></button></li>
-      <li><button type="button" data-paso="3"><span class="paso-num">3</span><span class="paso-txt"><strong>Cuadre</strong><small>En construcción</small></span></button></li>
+      <li><button type="button" data-paso="2"><span class="paso-num">2</span><span class="paso-txt"><strong>Cierre</strong><small id="estado-paso-2"></small></span></button></li>
+      <li><button type="button" data-paso="3"><span class="paso-num">3</span><span class="paso-txt"><strong>Cuadre</strong><small id="estado-paso-3"></small></span></button></li>
     </ol>
     <div id="dia-panel"></div>`;
   pintarPanel();
@@ -328,20 +347,22 @@ function pintarPanel() {
     else b.removeAttribute('aria-current');
   });
 
-  if (paso !== 1) {
+  if (paso === 2) {
+    pintarCierre($('dia-panel'), fecha);
+    pintarEstadoPasos();
+    return;
+  }
+  if (paso === 3) {
     const [titulo, texto] = EN_OBRAS[paso];
     $('dia-panel').innerHTML = `<div class="resultado pendiente">${ICONO.reloj}
       <div><p class="grande">${titulo}: todavía en construcción</p><p>${texto}</p></div></div>`;
-    // El estado del paso 1 se sigue viendo aunque se mire otro paso
-    const n = resumenGenero(estado.dias, estado.productos, fecha).productos;
-    $('estado-paso-1').textContent = n ? `${n} ${n === 1 ? 'producto' : 'productos'}` : 'Pendiente';
-    document.querySelector('.pasos [data-paso="1"]').classList.toggle('hecho', n > 0);
+    pintarEstadoPasos();
     return;
   }
 
   $('dia-panel').innerHTML = panelGenero();
   if (!$('dia-cifras')) {
-    $('estado-paso-1').textContent = 'Pendiente';
+    pintarEstadoPasos();
     return;
   }
   document.querySelectorAll('#dia-panel .fila-genero').forEach(actualizarFila);
@@ -375,6 +396,7 @@ function buscar(texto) {
 
 export function prepararDia() {
   const vista = $('vista-dia');
+  prepararCierre(vista, () => fecha, pintarEstadoPasos, pintarDia);
 
   vista.addEventListener('click', (e) => {
     const id = e.target.closest('button')?.id;
@@ -382,10 +404,11 @@ export function prepararDia() {
     if (id === 'dia-siguiente') return cambiarFecha(sumarDias(fecha, 1));
     if (id === 'dia-hoy' || id === 'dia-hoy-aviso') return cambiarFecha(hoyISO());
 
-    const boton = e.target.closest('.pasos button');
+    const boton = e.target.closest('.pasos button, [data-paso-ir]');
     if (boton) {
-      paso = +boton.dataset.paso;
+      paso = +(boton.dataset.paso || boton.dataset.pasoIr);
       pintarPanel();
+      window.scrollTo(0, 0);
       return;
     }
 
@@ -441,6 +464,7 @@ export function prepararDia() {
       if (mal) return;
       ponerFondo(estado.dias, fecha, valor);
       comprobarGuardado(guardar());
+      if (paso === 2) actualizarCierre(fecha);
       return;
     }
 

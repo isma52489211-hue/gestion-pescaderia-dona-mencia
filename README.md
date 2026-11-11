@@ -14,6 +14,7 @@ En el móvil se puede instalar desde el menú del navegador («Añadir a pantall
 
 - **Cuadre de género contra caja** (no hay báscula con total del día).
 - **Coste y ganancia**, **cambios de precio durante el día** y **gastos de caja detallados**.
+- La tienda abre de **martes a sábado, de 8:30 a 13:30**.
 - El sobrante no pasa solo al día siguiente: cada día se apunta el género con el que se empieza.
 - Los productos **se archivan, no se borran**, para no romper los días ya apuntados.
 - **De momento los datos se guardan en el aparato**, con copia de seguridad descargable. La nube y los PIN se dejan para el final, por decidir.
@@ -24,7 +25,7 @@ En el móvil se puede instalar desde el menú del navegador («Añadir a pantall
 2. Productos: catálogo con precio de venta y coste, y copia de seguridad. **Hecho.**
 3. Género del día: kilos, precio y coste con los que empieza cada producto. **Hecho.**
 4. Cambios de precio: a mitad del día, pesando lo que queda en el mostrador. **Hecho.**
-5. Cierre guiado a ciegas.
+5. Cierre guiado a ciegas: lo que sobra producto a producto, retiradas y mermas, gastos con concepto y caja (con recuento por billetes). **Hecho.**
 6. Cuadre.
 7. Congelado.
 8. Resumen.
@@ -40,7 +41,8 @@ Sin instalaciones ni compilación: HTML, CSS y JavaScript.
 - `js/nucleo/`: los cálculos, separados de la pantalla para poder probarlos.
   - `numeros.js`: el dinero se guarda en céntimos enteros y las cantidades en milésimas enteras, para que las cuentas sean exactas.
   - `cuadre.js`: lo vendido por producto, lo cobrado en caja y la comparación.
-  - `dia.js`: el género de cada día (precio propuesto, avisos, resumen) y `fechas.js`.
+  - `dia.js`: el género de cada día (precio propuesto, avisos, resumen y cambios de precio) y `fechas.js` (con el horario).
+  - `cierre.js`: el cierre a ciegas (lo que sobra, retiradas y mermas, gastos, caja, terminar y reabrir).
   - `productos.js`: reglas del catálogo (nombres sin repetir, ganancia por kilo, archivar).
   - `copia.js`: comprobación de una copia de seguridad antes de restaurarla.
 - `pruebas/`: pruebas automáticas de los cálculos.
@@ -52,6 +54,7 @@ Sin instalaciones ni compilación: HTML, CSS y JavaScript.
 - Venta posible: todo el género al precio del día, menos la merma de limpieza. Si el precio cambia durante el día, lo que había antes del cambio cuenta al precio de antes y lo que quedaba, al nuevo. La rebaja de un día no pasa al siguiente. La ganancia posible solo se da si se conoce el precio y el coste de todo.
 - Producto: `inicio − sobra − retiradas y mermas = vendido`, menos el % de merma de limpieza si lo tiene. Con cambios de precio, cada tramo se valora a su precio.
 - Un producto **sin contar** no es lo mismo que uno del que **no sobra nada**: mientras quede algo sin contar no hay cuadre.
+- Cierre a ciegas: mientras se cierra no se ve con cuánto se empezó ni lo que debería haber en caja. Para terminarlo hace falta lo que sobra de todo y la caja completa (fondo, efectivo, tarjeta y Bizum; 0 vale, vacío no). Terminado, el día queda bloqueado hasta que se reabra.
 - Caja: `efectivo contado − fondo + gastos y retiradas de dinero + tarjeta + Bizum = cobrado`.
 - La caja cuadra si la diferencia está dentro del margen (3 € o el 1 % de lo vendido, lo que sea mayor). La diferencia exacta se enseña siempre.
 

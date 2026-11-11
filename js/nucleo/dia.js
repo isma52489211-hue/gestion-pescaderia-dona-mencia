@@ -3,7 +3,9 @@
 // dias['2026-12-01'] = {
 //   genero: { 'merluza': { inicio: 10000, pvp: 1290, coste: 800, cambios: [{ quedaban: 4000, pvp: 990, hora: '13:30' }] }, … },
 //           cantidades en milésimas, dinero en céntimos. «cambios»: cambios de precio durante el día.
-//   caja:   { fondo: 15000 },
+//   caja:   { fondo: 15000, contado, tarjeta, bizum, desglose: { 5000: 2, … }, movimientos: [{ tipo, importe, concepto, hora }] },
+//   salidas: [{ producto, tipo: 'retirada' | 'merma', cantidad, motivo, hora }],   ver cierre.js
+//   cerrado: { hora: '13:40' },
 // }
 
 import { importe } from './numeros.js';
@@ -16,7 +18,10 @@ const CAMBIO_LLAMATIVO = 0.4;
 
 export const diaVacio = () => ({ genero: {}, caja: {} });
 
-const sinDatos = (dia) => !Object.keys(dia.genero || {}).length && Object.values(dia.caja || {}).every((v) => v == null);
+// Un día sin nada apuntado no se guarda
+export const sinDatos = (dia) => !Object.keys(dia.genero || {}).length
+  && Object.values(dia.caja || {}).every((v) => v == null || (Array.isArray(v) && !v.length) || (typeof v === 'object' && !Object.keys(v).length))
+  && !dia.salidas?.length && !dia.cerrado;
 
 // El último valor que se usó para un producto antes de esa fecha
 function ultimoValor(dias, fecha, id, campo) {
@@ -48,6 +53,7 @@ export const tieneGenero = (dias, producto, fecha) => (dias[fecha]?.genero?.[pro
 
 // Apunta un dato del género. campo: 'inicio' | 'pvp' | 'coste'. valor null = borrarlo.
 export function ponerDato(dias, producto, fecha, campo, valor) {
+  if (dias[fecha]?.cerrado) return false; // con el cierre terminado no se toca nada
   const dia = (dias[fecha] ||= diaVacio());
   dia.genero ||= {};
   const linea = (dia.genero[producto.id] ||= {});
@@ -68,14 +74,17 @@ export function ponerDato(dias, producto, fecha, campo, valor) {
 
   if (!Object.keys(linea).length) delete dia.genero[producto.id];
   if (sinDatos(dia)) delete dias[fecha];
+  return true;
 }
 
 export function ponerFondo(dias, fecha, valor) {
+  if (dias[fecha]?.cerrado) return false;
   const dia = (dias[fecha] ||= diaVacio());
   dia.caja ||= {};
   if (valor == null) delete dia.caja.fondo;
   else dia.caja.fondo = valor;
   if (sinDatos(dia)) delete dias[fecha];
+  return true;
 }
 
 // Cosas que conviene revisar de un producto con género. Devuelve [{ tipo, antes? }]
@@ -122,7 +131,8 @@ export function precioActual(linea) {
 }
 
 // Comprueba un cambio antes de guardarlo. Devuelve { error } o { avisos: [{ tipo, antes }] }
-export function revisarCambio(linea, { quedaban, pvp }) {
+export function revisarCambio(linea, { quedaban, pvp }, cerrado = false) {
+  if (cerrado) return { error: 'cerrado' };
   if (!(linea.inicio > 0)) return { error: 'sin-genero' };
   if (quedaban == null) return { error: 'falta-cantidad' };
   if (pvp == null) return { error: 'falta-precio' };
@@ -150,7 +160,7 @@ function precioAntesDe(linea, quedaban) {
 // Apunta un cambio de precio ya revisado. Devuelve el mismo resultado que revisarCambio.
 export function ponerCambio(dias, producto, fecha, cambio) {
   const l = lineaGenero(dias, producto, fecha);
-  const revision = revisarCambio(l, cambio);
+  const revision = revisarCambio(l, cambio, !!dias[fecha]?.cerrado);
   if (revision.error) return revision;
   const linea = dias[fecha].genero[producto.id];
   const nuevo = { quedaban: cambio.quedaban, pvp: cambio.pvp };
@@ -164,7 +174,7 @@ export function ponerCambio(dias, producto, fecha, cambio) {
 
 export function quitarCambio(dias, producto, fecha, indice) {
   const linea = dias[fecha]?.genero?.[producto.id];
-  if (!linea?.cambios?.[indice]) return false;
+  if (dias[fecha]?.cerrado || !linea?.cambios?.[indice]) return false;
   linea.cambios.splice(indice, 1);
   if (!linea.cambios.length) delete linea.cambios;
   if (!Object.keys(linea).length) delete dias[fecha].genero[producto.id];

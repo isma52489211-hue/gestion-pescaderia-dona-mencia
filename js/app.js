@@ -7,10 +7,11 @@ import { pintarMas, prepararMas, abrirPaginaMas } from './vistas/mas.js';
 import { pintarDia, prepararDia, irAlDia } from './vistas/dia.js';
 import { activos } from './nucleo/productos.js';
 import { resumenGenero } from './nucleo/dia.js';
-import { hoyISO, fechaLarga } from './nucleo/fechas.js';
+import { estadoCierre } from './nucleo/cierre.js';
+import { hoyISO, fechaLarga, fechaCorta, sumarDias, abreEseDia, HORARIO } from './nucleo/fechas.js';
 import { fmtEuros, fmtKg, fmtUnidades } from './nucleo/numeros.js';
 
-export const VERSION = '0.4';
+export const VERSION = '0.5';
 
 // ---------- Plan de construcción ----------
 
@@ -19,7 +20,7 @@ const PASOS = [
   { titulo: 'Productos', texto: 'Catálogo con precio de venta y coste de compra, y copia de seguridad.', hecho: true },
   { titulo: 'Género del día', texto: 'Kilos, coste y precio con los que empieza cada producto.', hecho: true },
   { titulo: 'Cambios de precio', texto: 'Subir o bajar un precio a mitad del día sin descuadrar la caja.', hecho: true },
-  { titulo: 'Cierre guiado a ciegas', texto: 'Producto a producto, sin casillas olvidadas, con retiradas, mermas y gastos detallados.' },
+  { titulo: 'Cierre guiado a ciegas', texto: 'Producto a producto, sin casillas olvidadas, con retiradas, mermas y gastos detallados.', hecho: true },
   { titulo: 'Cuadre', texto: 'Lo que debería haber frente a lo cobrado, con margen, ganancia y avisos.' },
   { titulo: 'Congelado', texto: 'Stock de la tienda y lista de reposición.' },
   { titulo: 'Resumen', texto: 'Semana y mes, con ganancia y exportación.' },
@@ -53,25 +54,44 @@ function pintarInicio() {
     bloque = `<div class="resultado pendiente">${ICONO.lista}
       <div><p class="grande">Empieza por los productos</p><p>Crea el catálogo con lo que vas a vender. Después podrás apuntar el género de cada día.</p></div>
       <button type="button" class="btn primario" data-ir="productos">Ir a productos</button></div>`;
+  } else if (!r.productos && !abreEseDia(hoy)) {
+    bloque = `<div class="resultado pendiente">${ICONO.reloj}
+      <div><p class="grande">Hoy la tienda no abre</p><p>Abre de martes a sábado, de ${horaTexto(HORARIO.abre)} a ${horaTexto(HORARIO.cierra)}.</p></div>
+      <button type="button" class="btn secundario" data-ir="dia">Abrir el día igualmente</button></div>`;
   } else if (!r.productos) {
     bloque = `<div class="resultado pendiente">${ICONO.reloj}
       <div><p class="grande">Falta el género de hoy</p><p>Apunta los kilos y los precios con los que empieza el día.</p></div>
       <button type="button" class="btn primario" data-ir="dia">Apuntar género</button></div>`;
   } else {
     const cantidad = [r.kilos ? fmtKg(r.kilos) : '', r.unidades ? fmtUnidades(r.unidades) : ''].filter(Boolean).join(' y ');
-    bloque = `<div class="resultado ok">${ICONO.ok}
-      <div><p class="grande">Género de hoy apuntado</p>
-      <p>${r.productos} ${r.productos === 1 ? 'producto' : 'productos'} · ${cantidad} · Venta posible ${fmtEuros(r.venta)}${r.cambios ? ` · ${r.cambios} ${r.cambios === 1 ? 'cambio' : 'cambios'} de precio` : ''}</p></div>
-      <button type="button" class="btn secundario" data-ir="dia">Ver el día</button></div>`;
+    const datos = `${r.productos} ${r.productos === 1 ? 'producto' : 'productos'} · ${cantidad} · Venta posible ${fmtEuros(r.venta)}${r.cambios ? ` · ${r.cambios} ${r.cambios === 1 ? 'cambio' : 'cambios'} de precio` : ''}`;
+    const c = estadoCierre(estado.dias, estado.productos, hoy);
+    bloque = c.cerrado
+      ? `<div class="resultado ok">${ICONO.ok}
+      <div><p class="grande">Cierre de hoy terminado a las ${escapar(c.cerrado.hora)}</p><p>${datos}</p></div>
+      <button type="button" class="btn secundario" data-ir="cierre" data-fecha="${hoy}">Ver el cierre</button></div>`
+      : `<div class="resultado pendiente">${ICONO.reloj}
+      <div><p class="grande">Día abierto: falta el cierre</p>
+      <p>${datos}</p><p>El cierre se hace al cerrar, a las ${horaTexto(HORARIO.cierra)}${c.contados ? ` · ${c.contados} de ${c.productos} contados` : ''}.</p></div>
+      <button type="button" class="btn primario" data-ir="cierre" data-fecha="${hoy}">Ir al cierre</button></div>`;
   }
 
   const avisos = [];
+  // Días de la última semana con género y sin cerrar
+  for (let i = 7; i >= 1; i--) {
+    const f = sumarDias(hoy, -i);
+    if (!estado.dias[f]) continue;
+    const c = estadoCierre(estado.dias, estado.productos, f);
+    if (c.productos && !c.cerrado) avisos.push([`Cierre sin terminar: ${fechaCorta(f)}`, 'El género está apuntado pero falta terminar el cierre.', 'cierre', f]);
+  }
   if (r.sinPrecio.length) avisos.push(['Falta el precio de venta de hoy', r.sinPrecio.join(', ')]);
   if (r.sinCoste.length) avisos.push(['Falta el coste de hoy', r.sinCoste.join(', ')]);
-  $('inicio-estado').innerHTML = bloque + avisos.map(([titulo, texto]) => `<div class="aviso">${ICONO.alerta}
+  $('inicio-estado').innerHTML = bloque + avisos.map(([titulo, texto, ir = 'dia', f = hoy]) => `<div class="aviso">${ICONO.alerta}
     <div><strong>${titulo}</strong><p>${escapar(texto)}</p></div>
-    <button type="button" class="btn secundario" data-ir="dia">Revisar</button></div>`).join('');
+    <button type="button" class="btn secundario" data-ir="${ir}" data-fecha="${f}">Revisar</button></div>`).join('');
 }
+
+const horaTexto = (h) => h.replace(/^0/, '');
 
 // ---------- Secciones todavía en construcción ----------
 
@@ -119,11 +139,15 @@ document.querySelectorAll('.nav-btn').forEach((b) => b.addEventListener('click',
   mostrarVista(b.dataset.vista);
 }));
 
-// Botones que llevan a otro sitio de la app: data-ir="dia" (el día de hoy) o data-ir="productos"
+// Botones que llevan a otro sitio de la app: data-ir="dia" (el día de hoy), "cierre" (con data-fecha) o "productos"
 document.addEventListener('click', (e) => {
-  const destino = e.target.closest('[data-ir]')?.dataset.ir;
+  const boton = e.target.closest('[data-ir]');
+  const destino = boton?.dataset.ir;
   if (destino === 'dia') {
     irAlDia();
+    mostrarVista('dia');
+  } else if (destino === 'cierre') {
+    irAlDia(boton.dataset.fecha, 2);
     mostrarVista('dia');
   } else if (destino === 'productos') {
     abrirPaginaMas('productos');

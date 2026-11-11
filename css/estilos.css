@@ -341,7 +341,7 @@ label.btn { margin: 0; font-size: 16px; }
 .fg-nombre small { font-size: 14px; color: var(--suave); }
 .fg-campo { margin: 0; font-weight: 400; color: var(--suave); min-width: 0; }
 .fg-campo input { margin-top: 2px; padding: 8px; }
-.fg-campo input[aria-invalid="true"] { border: 2px solid var(--falta); background: var(--falta-fondo); }
+.fg-campo input[aria-invalid="true"], .fila-cierre input[aria-invalid="true"] { border: 2px solid var(--falta); background: var(--falta-fondo); }
 .fg-nota { grid-column: 1 / -1; margin: 0; font-size: 14px; color: var(--suave); min-height: 0; }
 .fg-nota:empty { display: none; }
 .fg-nota.ojo { color: var(--sobra); font-weight: 900; }
@@ -369,6 +369,41 @@ label.btn { margin: 0; font-size: 16px; }
 .form-cambio .error { margin: 0 0 12px; }
 
 .otros summary { min-height: 48px; display: flex; align-items: center; font-weight: 900; color: var(--azul); cursor: pointer; border-top: 1px solid var(--borde); }
+
+/* ---------- Cierre ---------- */
+
+fieldset.sin-marco { border: 0; padding: 0; margin: 0; min-width: 0; }
+fieldset:disabled input, fieldset:disabled select, input:disabled { background: var(--gris); color: var(--suave); }
+h2 .paso-num { display: inline-grid; vertical-align: middle; margin: -4px 6px 0 0; line-height: 1; }
+.form-cierre .ayuda-campo { display: inline; margin: 0; }
+.progreso { font-size: 16px; margin-bottom: 8px; }
+.fila-cierre {
+  display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; align-items: end;
+  padding: 12px 0 12px 12px; border-top: 1px solid var(--borde); border-left: 4px solid transparent;
+}
+.fila-cierre.con-dato { border-left-color: var(--azul); background: var(--azul-claro); padding-right: 8px; }
+.fc-nombre { grid-column: 1 / -1; margin: 0; }
+.fc-nombre small { font-size: 14px; color: var(--suave); }
+.fila-cierre .btn { font-size: 15px; padding: 0 12px; }
+.fc-estado { grid-column: 1 / -1; margin: 0; display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 900; }
+.fc-estado .icono { width: 22px; height: 22px; }
+.fc-estado.pendiente { color: var(--suave); }
+.fc-estado.ok { color: var(--ok); }
+.fc-estado.mal { color: var(--falta); }
+.fc-estado.mal::before { content: "⚠ "; }
+@media (min-width: 700px) {
+  .fila-cierre { grid-template-columns: minmax(180px, 1.4fr) minmax(140px, 1fr) auto minmax(150px, 1fr); align-items: center; gap: 4px 12px; }
+  .fc-nombre { grid-column: 1; }
+  .fc-estado { grid-column: 4; }
+}
+.form-cierre { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--borde); }
+.form-cierre label { margin-bottom: 0; }
+.form-cierre .error { margin: 0 0 12px; }
+.fc-ancho { grid-column: 1 / -1; }
+.lista-cambios small { color: var(--suave); }
+.rejilla-billetes { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; margin: 8px 0 12px; }
+.rejilla-billetes .fg-campo { font-weight: 900; color: var(--tinta); }
+.desglose summary { border-top: 0; }
 
 /* Total siempre a la vista mientras se baja por la lista */
 .barra-total {
