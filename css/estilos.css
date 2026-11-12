@@ -175,7 +175,11 @@ input.num { font-family: var(--letra-dato); font-weight: 700; font-size: 18px; t
 
 .linea { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-top: 1px solid var(--borde); }
 .linea:first-of-type { border-top: 0; }
-.importe { font-family: var(--letra-dato); font-weight: 700; }
+.importe { font-family: var(--letra-dato); font-weight: 700; white-space: nowrap; }
+.linea.total { font-weight: 900; color: var(--azul); border-top: 2px solid var(--azul); }
+.linea-producto > span:first-child { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.linea-producto small { font-size: 14px; color: var(--suave); }
+.linea-producto small.en-ojo { color: var(--sobra); font-weight: 900; }
 
 /* ---------- Plan de construcción ---------- */
 

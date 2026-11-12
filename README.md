@@ -26,7 +26,7 @@ En el móvil se puede instalar desde el menú del navegador («Añadir a pantall
 3. Género del día: kilos, precio y coste con los que empieza cada producto. **Hecho.**
 4. Cambios de precio: a mitad del día, pesando lo que queda en el mostrador. **Hecho.**
 5. Cierre guiado a ciegas: lo que sobra producto a producto, retiradas y mermas, gastos con concepto y caja (con recuento por billetes). **Hecho.**
-6. Cuadre.
+6. Cuadre: sale al terminar el cierre, con el detalle por producto, la caja y la ganancia. **Hecho.**
 7. Congelado.
 8. Resumen.
 9. Plantilla con foto.
@@ -57,6 +57,8 @@ Sin instalaciones ni compilación: HTML, CSS y JavaScript.
 - Cierre a ciegas: mientras se cierra no se ve con cuánto se empezó ni lo que debería haber en caja. Para terminarlo hace falta lo que sobra de todo y la caja completa (fondo, efectivo, tarjeta y Bizum; 0 vale, vacío no). Terminado, el día queda bloqueado hasta que se reabra.
 - Caja: `efectivo contado − fondo + gastos y retiradas de dinero + tarjeta + Bizum = cobrado`.
 - La caja cuadra si la diferencia está dentro del margen (3 € o el 1 % de lo vendido, lo que sea mayor). La diferencia exacta se enseña siempre.
+- El cuadre solo se ve con el cierre terminado, y solo si todo lo vendido tiene precio.
+- Ganancia: ventas menos el coste de lo vendido; aparte se resta lo que costó lo tirado (mermas). Las retiradas no son pérdida y los gastos de caja no se restan.
 
 ## Pruebas
 

@@ -11,6 +11,7 @@ import { aCentimos, aMilesimas, aUnidades, fmtEuros, fmtKg, fmtUnidades, centimo
 import { hoyISO, sumarDias, esFecha, fechaLarga, fechaCorta, abreEseDia } from '../nucleo/fechas.js';
 import { estadoCierre } from '../nucleo/cierre.js';
 import { pintarCierre, prepararCierre, actualizarCierre } from './cierre.js';
+import { panelCuadre, resultadoDelDia, textoResultado } from './cuadre.js';
 
 // El congelado lleva su propio control de stock (sección «Congelado»)
 const TIPOS_GENERO = ['fresco', 'gordo', 'marisco'];
@@ -78,7 +79,8 @@ function pintarEstadoPasos() {
   };
   poner(1, n ? `${n} ${n === 1 ? 'producto' : 'productos'}` : 'Pendiente', n > 0);
   poner(2, e.cerrado ? `Terminado ${e.cerrado.hora}` : n ? `${e.contados} de ${e.productos} contados` : 'Pendiente', !!e.cerrado);
-  poner(3, e.cerrado ? 'En construcción' : 'Tras el cierre', false);
+  const r = e.cerrado ? resultadoDelDia(fecha) : null;
+  poner(3, e.cerrado ? textoResultado(r?.resultado) : 'Tras el cierre', !!r?.resultado);
 }
 
 function pintarCifras() {
@@ -312,10 +314,6 @@ function panelGenero() {
     </div>`;
 }
 
-const EN_OBRAS = {
-  3: ['Cuadre', 'Aquí saldrá, al terminar el cierre, lo que debería haber en caja frente a lo cobrado, y la ganancia del día.'],
-};
-
 export function pintarDia() {
   const hoy = hoyISO();
   const otroDia = fecha === hoy ? '' : `<div class="aviso">${ICONO.alerta}
@@ -353,9 +351,7 @@ function pintarPanel() {
     return;
   }
   if (paso === 3) {
-    const [titulo, texto] = EN_OBRAS[paso];
-    $('dia-panel').innerHTML = `<div class="resultado pendiente">${ICONO.reloj}
-      <div><p class="grande">${titulo}: todavía en construcción</p><p>${texto}</p></div></div>`;
+    $('dia-panel').innerHTML = panelCuadre(fecha);
     pintarEstadoPasos();
     return;
   }
@@ -396,7 +392,11 @@ function buscar(texto) {
 
 export function prepararDia() {
   const vista = $('vista-dia');
-  prepararCierre(vista, () => fecha, pintarEstadoPasos, pintarDia);
+  prepararCierre(vista, () => fecha, pintarEstadoPasos, (pasoNuevo) => {
+    if (pasoNuevo) paso = pasoNuevo;
+    pintarDia();
+    window.scrollTo(0, 0);
+  });
 
   vista.addEventListener('click', (e) => {
     const id = e.target.closest('button')?.id;

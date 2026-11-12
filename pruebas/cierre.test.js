@@ -4,6 +4,7 @@ import { ponerDato, ponerFondo, ponerCambio, lineaGenero } from '../js/nucleo/di
 import {
   ponerSobra, sobraDe, ponerSalida, quitarSalida, salidasDe, ponerMovimiento, quitarMovimiento,
   ponerCaja, ponerDesglose, totalDesglose, estadoCierre, terminarCierre, reabrirCierre, estaCerrado,
+  cuadreDeUnDia,
 } from '../js/nucleo/cierre.js';
 import { abreEseDia } from '../js/nucleo/fechas.js';
 
@@ -198,4 +199,81 @@ test('con el cierre terminado no se puede cambiar nada del día', () => {
   assert.equal(reabrirCierre(dias, HOY), true);
   assert.deepEqual(ponerSobra(dias, merluza, HOY, 1000), {});
   assert.equal(reabrirCierre(dias, HOY), false);
+});
+
+test('sin precio de venta no se puede cerrar', () => {
+  const sinPrecio = { ...rape, id: 'sargo', nombre: 'Sargo', pvp: null };
+  const dias = diaConGenero();
+  ponerDato(dias, sinPrecio, HOY, 'inicio', 2000);
+  const e = estadoCierre(dias, [...CATALOGO, sinPrecio], HOY);
+  assert.deepEqual(e.faltan.find((f) => f.tipo === 'sin-precio'), { tipo: 'sin-precio', productos: ['Sargo'] });
+});
+
+// ---------- Cuadre del día ----------
+
+function diaCerrado() {
+  const dias = diaConGenero(); // merluza 10 kg a 12,90 (coste 8), ostras 24 uds a 1,50 (coste 0,80), fondo 150 €
+  ponerCambio(dias, merluza, HOY, { quedaban: 4000, pvp: 990 });
+  ponerSobra(dias, merluza, HOY, 1000);
+  ponerSalida(dias, CATALOGO, HOY, { producto: 'merluza', tipo: 'merma', cantidad: 500 });
+  ponerSobra(dias, ostras, HOY, 4000);
+  ponerSalida(dias, CATALOGO, HOY, { producto: 'ostras', tipo: 'retirada', cantidad: 2000 });
+  // Vendido: merluza 6 kg × 12,90 + 2,5 kg × 9,90 = 77,40 + 24,75 = 102,15 €; ostras 18 × 1,50 = 27 €
+  ponerMovimiento(dias, HOY, { tipo: 'gasto', importe: 1000, concepto: 'Hielo' });
+  ponerCaja(dias, HOY, 'contado', 15000 + 9215 - 1000); // fondo + efectivo de ventas − gasto
+  ponerCaja(dias, HOY, 'tarjeta', 2000);
+  ponerCaja(dias, HOY, 'bizum', 1700);
+  terminarCierre(dias, CATALOGO, HOY, '13:40');
+  return dias;
+}
+
+test('cuadre de un día con cambio de precio, mermas, retiradas y gastos', () => {
+  const r = cuadreDeUnDia(diaCerrado(), CATALOGO, HOY);
+  assert.equal(r.completo, true);
+  assert.equal(r.teorico, 10215 + 2700);
+  assert.equal(r.caja.cobrado, 9215 + 2000 + 1700);
+  assert.equal(r.resultado.diferencia, 0);
+  assert.equal(r.resultado.estado, 'cuadra');
+  const merluzaL = r.lineas.find((l) => l.id === 'merluza');
+  assert.equal(merluzaL.vendido, 8500);
+  assert.equal(merluzaL.salidas, 500);
+  assert.equal(merluzaL.tramos.length, 2);
+  assert.equal(r.cerrado.hora, '13:40');
+});
+
+test('ganancia: lo vendido menos su coste, y aparte lo que costó lo tirado', () => {
+  const r = cuadreDeUnDia(diaCerrado(), CATALOGO, HOY);
+  // merluza: 102,15 € − 8,5 kg × 8 € = 34,15 €; ostras: 27 € − 18 × 0,80 = 12,60 €
+  assert.equal(r.ganancia, 3415 + 1260);
+  assert.equal(r.costeMermas, 400); // 0,5 kg de merluza × 8 €
+  assert.equal(r.gananciaNeta, 3415 + 1260 - 400);
+  // La retirada no es pérdida
+  assert.deepEqual(r.salidas.map((s) => s.tipo), ['merma', 'retirada']);
+});
+
+test('si falta dinero, se dice cuánto', () => {
+  const dias = diaCerrado();
+  reabrirCierre(dias, HOY);
+  ponerCaja(dias, HOY, 'contado', 15000 + 9215 - 1000 - 2000);
+  const r = cuadreDeUnDia(dias, CATALOGO, HOY);
+  assert.equal(r.resultado.estado, 'falta');
+  assert.equal(r.resultado.diferencia, -2000);
+});
+
+test('sin coste de algo, no se da la ganancia', () => {
+  const dias = diaCerrado();
+  reabrirCierre(dias, HOY);
+  ponerDato(dias, merluza, HOY, 'coste', null);
+  const sinCoste = { ...merluza, coste: null };
+  const r = cuadreDeUnDia(dias, [sinCoste, ostras, rape], HOY);
+  assert.equal(r.gananciaCompleta, false);
+  assert.equal(r.costeMermas, null);
+  assert.equal(r.gananciaNeta, null);
+});
+
+test('un producto archivado después sigue contando en los días antiguos', () => {
+  const dias = diaCerrado();
+  const archivada = { ...merluza, archivado: true };
+  const r = cuadreDeUnDia(dias, [archivada, ostras, rape], HOY);
+  assert.equal(r.teorico, 10215 + 2700);
 });

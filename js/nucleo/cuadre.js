@@ -110,12 +110,16 @@ export function cuadreDelDia({ productos = [], caja = {}, tolerancia = TOLERANCI
   const conCoste = contadas.filter((l) => l.costeVendido != null);
   const ganancia = conCoste.reduce((s, l) => s + l.importe - l.costeVendido, 0);
 
-  // El cuadre solo se da por bueno si no queda nada sin contar
-  const completo = sinContar.length === 0 && cobro.contada && lineas.length > 0;
+  // Sin precio, lo vendido contaría como 0 € y el cuadre saldría mal
+  const sinPrecio = contadas.filter((l) => l.avisos.includes('sin-precio'));
+
+  // El cuadre solo se da por bueno si no queda nada sin contar ni sin precio
+  const completo = sinContar.length === 0 && sinPrecio.length === 0 && cobro.contada && lineas.length > 0;
 
   return {
     lineas,
     sinContar: sinContar.map((l) => l.nombre),
+    sinPrecio: sinPrecio.map((l) => l.nombre),
     teorico,
     caja: cobro,
     ganancia,

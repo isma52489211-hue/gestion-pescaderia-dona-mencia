@@ -8,10 +8,11 @@ import { pintarDia, prepararDia, irAlDia } from './vistas/dia.js';
 import { activos } from './nucleo/productos.js';
 import { resumenGenero } from './nucleo/dia.js';
 import { estadoCierre } from './nucleo/cierre.js';
+import { resultadoDelDia, textoResultado } from './vistas/cuadre.js';
 import { hoyISO, fechaLarga, fechaCorta, sumarDias, abreEseDia, HORARIO } from './nucleo/fechas.js';
 import { fmtEuros, fmtKg, fmtUnidades } from './nucleo/numeros.js';
 
-export const VERSION = '0.5';
+export const VERSION = '0.6';
 
 // ---------- Plan de construcción ----------
 
@@ -21,7 +22,7 @@ const PASOS = [
   { titulo: 'Género del día', texto: 'Kilos, coste y precio con los que empieza cada producto.', hecho: true },
   { titulo: 'Cambios de precio', texto: 'Subir o bajar un precio a mitad del día sin descuadrar la caja.', hecho: true },
   { titulo: 'Cierre guiado a ciegas', texto: 'Producto a producto, sin casillas olvidadas, con retiradas, mermas y gastos detallados.', hecho: true },
-  { titulo: 'Cuadre', texto: 'Lo que debería haber frente a lo cobrado, con margen, ganancia y avisos.' },
+  { titulo: 'Cuadre', texto: 'Lo que debería haber frente a lo cobrado, con margen, ganancia y avisos.', hecho: true },
   { titulo: 'Congelado', texto: 'Stock de la tienda y lista de reposición.' },
   { titulo: 'Resumen', texto: 'Semana y mes, con ganancia y exportación.' },
   { titulo: 'Plantilla con foto', texto: 'Rellenar el género con una foto de la hoja impresa.' },
@@ -66,10 +67,14 @@ function pintarInicio() {
     const cantidad = [r.kilos ? fmtKg(r.kilos) : '', r.unidades ? fmtUnidades(r.unidades) : ''].filter(Boolean).join(' y ');
     const datos = `${r.productos} ${r.productos === 1 ? 'producto' : 'productos'} · ${cantidad} · Venta posible ${fmtEuros(r.venta)}${r.cambios ? ` · ${r.cambios} ${r.cambios === 1 ? 'cambio' : 'cambios'} de precio` : ''}`;
     const c = estadoCierre(estado.dias, estado.productos, hoy);
+    const cuadre = c.cerrado ? resultadoDelDia(hoy) : null;
+    const res = cuadre?.resultado;
+    const clase = !res ? 'pendiente' : res.estado === 'cuadra' ? 'ok' : res.estado;
     bloque = c.cerrado
-      ? `<div class="resultado ok">${ICONO.ok}
-      <div><p class="grande">Cierre de hoy terminado a las ${escapar(c.cerrado.hora)}</p><p>${datos}</p></div>
-      <button type="button" class="btn secundario" data-ir="cierre" data-fecha="${hoy}">Ver el cierre</button></div>`
+      ? `<div class="resultado ${clase}">${res?.estado === 'cuadra' ? ICONO.ok : ICONO.alerta}
+      <div><p class="grande">${res?.estado === 'cuadra' ? 'Hoy la caja cuadra' : res ? `Hoy: ${textoResultado(res)}` : 'Cierre de hoy terminado'}</p>
+      <p>Cierre terminado a las ${escapar(c.cerrado.hora)}${res ? ` · Debería haber ${fmtEuros(cuadre.teorico)} · Cobrado ${fmtEuros(cuadre.caja.cobrado)}` : ''}</p></div>
+      <button type="button" class="btn secundario" data-ir="cuadre" data-fecha="${hoy}">Ver el cuadre</button></div>`
       : `<div class="resultado pendiente">${ICONO.reloj}
       <div><p class="grande">Día abierto: falta el cierre</p>
       <p>${datos}</p><p>El cierre se hace al cerrar, a las ${horaTexto(HORARIO.cierra)}${c.contados ? ` · ${c.contados} de ${c.productos} contados` : ''}.</p></div>
@@ -146,8 +151,8 @@ document.addEventListener('click', (e) => {
   if (destino === 'dia') {
     irAlDia();
     mostrarVista('dia');
-  } else if (destino === 'cierre') {
-    irAlDia(boton.dataset.fecha, 2);
+  } else if (destino === 'cierre' || destino === 'cuadre') {
+    irAlDia(boton.dataset.fecha, destino === 'cierre' ? 2 : 3);
     mostrarVista('dia');
   } else if (destino === 'productos') {
     abrirPaginaMas('productos');

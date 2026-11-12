@@ -185,6 +185,7 @@ export function panelCierre(fecha) {
 function textoFalta(f) {
   if (f.tipo === 'sin-genero') return 'No hay género apuntado este día.';
   if (f.tipo === 'sin-contar') return `Falta lo que sobra de: ${f.productos.map(escapar).join(', ')}.`;
+  if (f.tipo === 'sin-precio') return `Falta el precio de venta de: ${f.productos.map(escapar).join(', ')}. Ponlo en el paso 1 (Género).`;
   const extra = f.campo === 'tarjeta' || f.campo === 'bizum' ? ' (si no hubo, pon 0)' : '';
   const nombre = CAMPOS_CAJA[f.campo];
   return `Falta: ${nombre[0].toLowerCase()}${nombre.slice(1)}${extra}.`;
@@ -220,7 +221,7 @@ export function actualizarCierre(fecha) {
       ? `<div class="aviso">${ICONO.alerta}<div><strong>Revisa lo que sobra de ${e.sobraDeMas.map(escapar).join(', ')}</strong><p>Sobra más de lo que se trajo, contando retiradas y mermas. ¿Está bien escrito?</p></div></div>`
       : '';
     if (e.cerrado) {
-      faltan.innerHTML = `<p>El cuadre del día saldrá en el paso 3, que todavía está en construcción.</p>`;
+      faltan.innerHTML = `<p>El cuadre del día ya está en el paso 3.</p><button type="button" class="btn primario" data-paso-ir="3">Ver el cuadre</button>`;
     } else if (e.listo) {
       faltan.innerHTML = `${revisar}<div class="aviso ok">${ICONO.ok}<div><strong>Todo apuntado</strong><p>Al terminar, ya no se podrá cambiar nada de este día sin reabrir el cierre.</p></div></div>`;
     } else {
@@ -419,7 +420,7 @@ export function prepararCierre(vista, fechaDe, alCambiar, repintar) {
       const r = terminarCierre(estado.dias, estado.productos, fecha, horaActual());
       if (r.error) return avisar('Falta algún dato: revisa la lista.');
       if (guardado()) {
-        repintar();
+        repintar(3); // directo al cuadre
         avisar('Cierre terminado.');
       }
       return;

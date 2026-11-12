@@ -179,3 +179,12 @@ test('un día sin género no «cuadra» por estar vacío', () => {
   const r = cuadreDelDia({ productos: [], caja: { contado: 0 } });
   assert.equal(r.completo, false);
 });
+
+test('con algo vendido sin precio no se da el cuadre por bueno', () => {
+  const d = dia();
+  d.productos[1].pvp = null;
+  const r = cuadreDelDia(d);
+  assert.deepEqual(r.sinPrecio, ['Dorada']);
+  assert.equal(r.completo, false);
+  assert.equal(r.resultado, null);
+});

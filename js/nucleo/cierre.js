@@ -7,7 +7,9 @@
 // Cantidades en milésimas y dinero en céntimos. «Sin dato» (null) no es lo mismo que 0:
 // un producto del que no sobra nada se apunta como 0 a propósito, nunca se da por hecho.
 
-import { diaVacio, sinDatos, tieneGenero } from './dia.js';
+import { diaVacio, sinDatos, tieneGenero, lineaGenero } from './dia.js';
+import { cuadreDelDia, TOLERANCIA_INICIAL } from './cuadre.js';
+import { importe } from './numeros.js';
 
 export const TIPOS_SALIDA = {
   retirada: 'Retirada',
@@ -176,8 +178,14 @@ export function estadoCierre(dias, productos, fecha) {
     .map((p) => p.nombre);
 
   const faltaCaja = Object.keys(CAMPOS_CAJA).filter((c) => d.caja?.[c] == null);
+  // Sin precio de venta no se puede saber lo que debería haber en caja
+  const sinPrecio = conGenero.filter((p) => {
+    const l = lineaGenero(dias, p, fecha);
+    return l.pvp == null || l.cambios.some((c) => c.pvp == null);
+  }).map((p) => p.nombre);
   const faltan = [];
   if (!conGenero.length) faltan.push({ tipo: 'sin-genero' });
+  if (sinPrecio.length) faltan.push({ tipo: 'sin-precio', productos: sinPrecio });
   if (sinContar.length) faltan.push({ tipo: 'sin-contar', productos: sinContar });
   for (const campo of faltaCaja) faltan.push({ tipo: 'caja', campo });
 
@@ -207,4 +215,60 @@ export function reabrirCierre(dias, fecha) {
   delete dias[fecha].cerrado;
   limpiar(dias, fecha);
   return true;
+}
+
+// ---------- Cuadre ----------
+// Junta todo lo apuntado en un día y calcula el cuadre (ver cuadre.js).
+// Solo se enseña con el cierre terminado: antes, el recuento tiene que ser a ciegas.
+
+export function cuadreDeUnDia(dias, productos, fecha, tolerancia = TOLERANCIA_INICIAL) {
+  const d = dias[fecha] || diaVacio();
+  const conGenero = productos.filter((p) => tieneGenero(dias, p, fecha));
+  const porId = Object.fromEntries(conGenero.map((p) => [p.id, p]));
+
+  const entrada = conGenero.map((p) => {
+    const l = lineaGenero(dias, p, fecha);
+    return {
+      id: p.id,
+      nombre: p.nombre,
+      inicio: l.inicio,
+      sobra: d.genero[p.id].sobra ?? null,
+      salidas: salidasDe(dias, fecha, p.id),
+      mermaPct: p.mermaPct || 0,
+      pvp: l.pvp,
+      coste: l.coste,
+      cambios: l.cambios,
+    };
+  });
+  const r = cuadreDelDia({ productos: entrada, caja: d.caja || {}, tolerancia });
+
+  // Cada línea con lo que hace falta para explicarla en pantalla
+  r.lineas = r.lineas.map((l) => ({
+    ...l,
+    unidad: porId[l.id].unidad,
+    mermaPct: porId[l.id].mermaPct || 0,
+    sobra: d.genero[l.id].sobra ?? null,
+    salidas: salidasDe(dias, fecha, l.id),
+  }));
+
+  // Retiradas y mermas: no son venta. Lo tirado (merma) es una pérdida: se valora a lo que costó.
+  r.salidas = (d.salidas || [])
+    .filter((s) => porId[s.producto])
+    .map((s) => {
+      const coste = lineaGenero(dias, porId[s.producto], fecha).coste;
+      return { ...s, nombre: porId[s.producto].nombre, unidad: porId[s.producto].unidad, coste: coste == null ? null : importe(s.cantidad, coste) };
+    });
+  const mermas = r.salidas.filter((s) => s.tipo === 'merma');
+  r.costeMermas = mermas.some((s) => s.coste == null) ? null : mermas.reduce((t, s) => t + s.coste, 0);
+
+  // Ganancia del día descontando lo tirado, solo si se sabe todo
+  r.gananciaNeta = r.completo && r.gananciaCompleta && r.costeMermas != null ? r.ganancia - r.costeMermas : null;
+
+  r.fondo = d.caja?.fondo ?? null;
+  r.contado = d.caja?.contado ?? null;
+  r.tarjeta = d.caja?.tarjeta ?? null;
+  r.bizum = d.caja?.bizum ?? null;
+  r.movimientos = d.caja?.movimientos || [];
+  r.cerrado = d.cerrado || null;
+  return r;
 }
