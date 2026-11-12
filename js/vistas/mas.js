@@ -6,7 +6,7 @@ import {
   TIPOS, normalizar, revisarProducto, hayErrores, crearProducto, cambiarProducto,
   gananciaPorUnidad, activos, archivados, estadoCatalogo, catalogoDeLuque,
 } from '../nucleo/productos.js';
-import { aCentimos, aNumero, fmtEuros, centimosATexto } from '../nucleo/numeros.js';
+import { aCentimos, aNumero, aMilesimas, aUnidades, fmtEuros, centimosATexto, milesimasATexto } from '../nucleo/numeros.js';
 
 let version = '';
 let pagina = 'menu'; // 'menu' | 'productos'
@@ -150,7 +150,8 @@ function pintarProductos() {
 
 // ---------- Ficha de producto ----------
 
-const CAMPOS = ['nombre', 'tipo', 'pvp', 'coste', 'mermaPct'];
+const CAMPOS = ['nombre', 'tipo', 'pvp', 'coste', 'mermaPct', 'stockIdeal'];
+const ID_CAMPO = { mermaPct: 'merma', stockIdeal: 'ideal' };
 
 function leerFicha() {
   const errores = {};
@@ -158,7 +159,7 @@ function leerFicha() {
     const texto = $(id).value.trim();
     if (!texto) return null;
     const n = convertir(texto);
-    if (n == null) errores[campo] = 'Escribe solo un número, por ejemplo 12,90.';
+    if (n == null) errores[campo] = campo === 'stockIdeal' && $('f-unidad').value === 'ud' ? 'Escribe un número entero de unidades, por ejemplo 10.' : 'Escribe solo un número, por ejemplo 12,90.';
     return n;
   };
   const datos = {
@@ -168,7 +169,8 @@ function leerFicha() {
     formato: $('f-formato').value,
     pvp: numero('f-pvp', aCentimos, 'pvp'),
     coste: numero('f-coste', aCentimos, 'coste'),
-    mermaPct: numero('f-merma', aNumero, 'mermaPct') ?? 0,
+    mermaPct: $('f-tipo').value === 'congelado' ? 0 : numero('f-merma', aNumero, 'mermaPct') ?? 0,
+    stockIdeal: numero('f-ideal', $('f-unidad').value === 'ud' ? aUnidades : aMilesimas, 'stockIdeal'),
   };
   return { datos, errores };
 }
@@ -186,7 +188,11 @@ function actualizarFicha() {
   const u = $('f-unidad').value === 'ud' ? 'unidad' : 'kg';
   $('t-pvp').textContent = `Precio de venta habitual (€/${u})`;
   $('t-coste').textContent = `Coste de compra habitual (€/${u})`;
-  $('l-formato').hidden = $('f-tipo').value !== 'congelado';
+  const congelado = $('f-tipo').value === 'congelado';
+  $('l-congelado').hidden = !congelado;
+  $('l-merma').hidden = congelado;
+  $('t-ideal').textContent = `Stock ideal en la tienda (${$('f-unidad').value === 'ud' ? 'unidades' : 'kg'})`;
+  $('f-ideal').inputMode = $('f-unidad').value === 'ud' ? 'numeric' : 'decimal';
 
   const { datos, errores } = leerFicha();
   const caja = $('f-ganancia');
@@ -212,6 +218,7 @@ function abrirFicha(id = null) {
   $('f-pvp').value = centimosATexto(p?.pvp);
   $('f-coste').value = centimosATexto(p?.coste);
   $('f-merma').value = p?.mermaPct ? String(p.mermaPct).replace('.', ',') : '';
+  $('f-ideal').value = milesimasATexto(p?.stockIdeal);
   $('f-archivar').hidden = !p;
   pintarErrores({});
   actualizarFicha();
@@ -225,7 +232,7 @@ function guardarFicha() {
   const errores = { ...revision.errores, ...deFormato };
   pintarErrores(errores);
   if (Object.keys(errores).length) {
-    $('f-' + ({ mermaPct: 'merma' }[Object.keys(errores)[0]] || Object.keys(errores)[0])).focus();
+    $('f-' + (ID_CAMPO[Object.keys(errores)[0]] || Object.keys(errores)[0])).focus();
     return;
   }
   if (editando) {

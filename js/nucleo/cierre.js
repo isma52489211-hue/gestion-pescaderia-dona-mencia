@@ -10,6 +10,11 @@
 import { diaVacio, sinDatos, tieneGenero, lineaGenero } from './dia.js';
 import { cuadreDelDia, TOLERANCIA_INICIAL } from './cuadre.js';
 import { importe } from './numeros.js';
+import { salidasDe, congeladosDelDia, lineaCongelado, sinStockDePartida, fijarPreciosCongelado } from './congelado.js';
+
+// ¿Se puede apuntar algo de este producto ese día? Fresco con género, o congelado con algo en la tienda.
+const enElDia = (dias, productos, p, fecha) => tieneGenero(dias, p, fecha)
+  || congeladosDelDia(dias, productos, fecha).some((x) => x.id === p.id);
 
 export const TIPOS_SALIDA = {
   retirada: 'Retirada',
@@ -59,7 +64,7 @@ export const sobraDe = (dias, producto, fecha) => dias[fecha]?.genero?.[producto
 export function revisarSalida(dias, productos, fecha, { producto, tipo, cantidad }) {
   if (estaCerrado(dias, fecha)) return { error: 'cerrado' };
   const p = productos.find((x) => x.id === producto);
-  if (!p || !tieneGenero(dias, p, fecha)) return { error: 'sin-producto' };
+  if (!p || !enElDia(dias, productos, p, fecha)) return { error: 'sin-producto' };
   if (!TIPOS_SALIDA[tipo]) return { error: 'sin-tipo' };
   if (cantidad == null || cantidad <= 0) return { error: 'sin-cantidad' };
   return {};
@@ -87,9 +92,7 @@ export function quitarSalida(dias, fecha, indice) {
 }
 
 // Total que ha salido sin venderse de un producto ese día
-export const salidasDe = (dias, fecha, id) => (dias[fecha]?.salidas || [])
-  .filter((s) => s.producto === id)
-  .reduce((suma, s) => suma + s.cantidad, 0);
+export { salidasDe };
 
 // ---------- Dinero que sale del cajón ----------
 // Gasto: se paga algo con dinero de la caja. Retirada: se saca dinero del cajón (al banco, al dueño…).
@@ -183,16 +186,31 @@ export function estadoCierre(dias, productos, fecha) {
     const l = lineaGenero(dias, p, fecha);
     return l.pvp == null || l.cambios.some((c) => c.pvp == null);
   }).map((p) => p.nombre);
+  // El congelado también se cuenta, producto a producto
+  const congelados = congeladosDelDia(dias, productos, fecha);
+  const lineasCong = congelados.map((p) => ({ p, l: lineaCongelado(dias, p, fecha) }));
+  const congSinContar = lineasCong.filter(({ l }) => !l.contado).map(({ p }) => p.nombre);
+  const congSinPrecio = lineasCong.filter(({ l }) => l.pvp == null).map(({ p }) => p.nombre);
+  const sinStock = sinStockDePartida(productos, fecha).map((p) => p.nombre);
+  for (const { p, l } of lineasCong) {
+    if (l.queda != null && l.queda + l.salidas > l.habia) sobraDeMas.push(p.nombre);
+  }
+
   const faltan = [];
   if (!conGenero.length) faltan.push({ tipo: 'sin-genero' });
-  if (sinPrecio.length) faltan.push({ tipo: 'sin-precio', productos: sinPrecio });
+  if (sinPrecio.length || congSinPrecio.length) faltan.push({ tipo: 'sin-precio', productos: [...sinPrecio, ...congSinPrecio] });
+  if (sinStock.length) faltan.push({ tipo: 'sin-stock', productos: sinStock });
   if (sinContar.length) faltan.push({ tipo: 'sin-contar', productos: sinContar });
+  if (congSinContar.length) faltan.push({ tipo: 'congelado-sin-contar', productos: congSinContar });
   for (const campo of faltaCaja) faltan.push({ tipo: 'caja', campo });
 
   return {
     productos: conGenero.length,
     contados: conGenero.length - sinContar.length,
+    congelados: congelados.length,
+    congeladosContados: congelados.length - congSinContar.length,
     sinContar,
+    congSinContar,
     sobraDeMas,
     faltaCaja,
     faltan,
@@ -206,6 +224,7 @@ export function terminarCierre(dias, productos, fecha, hora) {
   if (estaCerrado(dias, fecha)) return { error: 'cerrado' };
   const e = estadoCierre(dias, productos, fecha);
   if (!e.listo) return { error: 'faltan-datos', faltan: e.faltan };
+  fijarPreciosCongelado(dias, productos, fecha);
   dias[fecha].cerrado = { hora };
   return {};
 }
@@ -240,14 +259,22 @@ export function cuadreDeUnDia(dias, productos, fecha, tolerancia = TOLERANCIA_IN
       cambios: l.cambios,
     };
   });
+  const congelados = congeladosDelDia(dias, productos, fecha);
+  for (const p of congelados) {
+    const l = lineaCongelado(dias, p, fecha);
+    porId[p.id] = p;
+    entrada.push({ id: p.id, nombre: p.nombre, inicio: l.habia, sobra: l.queda, salidas: l.salidas, mermaPct: 0, pvp: l.pvp, coste: l.coste });
+  }
   const r = cuadreDelDia({ productos: entrada, caja: d.caja || {}, tolerancia });
 
   // Cada línea con lo que hace falta para explicarla en pantalla
+  const sobras = Object.fromEntries(entrada.map((e) => [e.id, e.sobra]));
   r.lineas = r.lineas.map((l) => ({
     ...l,
+    congelado: porId[l.id].tipo === 'congelado',
     unidad: porId[l.id].unidad,
-    mermaPct: porId[l.id].mermaPct || 0,
-    sobra: d.genero[l.id].sobra ?? null,
+    mermaPct: porId[l.id].tipo === 'congelado' ? 0 : porId[l.id].mermaPct || 0,
+    sobra: sobras[l.id] ?? null,
     salidas: salidasDe(dias, fecha, l.id),
   }));
 
@@ -255,7 +282,8 @@ export function cuadreDeUnDia(dias, productos, fecha, tolerancia = TOLERANCIA_IN
   r.salidas = (d.salidas || [])
     .filter((s) => porId[s.producto])
     .map((s) => {
-      const coste = lineaGenero(dias, porId[s.producto], fecha).coste;
+      const p = porId[s.producto];
+      const coste = p.tipo === 'congelado' ? lineaCongelado(dias, p, fecha).coste : lineaGenero(dias, p, fecha).coste;
       return { ...s, nombre: porId[s.producto].nombre, unidad: porId[s.producto].unidad, coste: coste == null ? null : importe(s.cantidad, coste) };
     });
   const mermas = r.salidas.filter((s) => s.tipo === 'merma');

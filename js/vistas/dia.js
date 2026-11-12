@@ -10,6 +10,7 @@ import {
 import { aCentimos, aMilesimas, aUnidades, fmtEuros, fmtKg, fmtUnidades, centimosATexto, milesimasATexto } from '../nucleo/numeros.js';
 import { hoyISO, sumarDias, esFecha, fechaLarga, fechaCorta, abreEseDia } from '../nucleo/fechas.js';
 import { estadoCierre } from '../nucleo/cierre.js';
+import { esCongelado, lineaCongelado, ponerLlegada } from '../nucleo/congelado.js';
 import { pintarCierre, prepararCierre, actualizarCierre } from './cierre.js';
 import { panelCuadre, resultadoDelDia, textoResultado } from './cuadre.js';
 
@@ -78,7 +79,7 @@ function pintarEstadoPasos() {
     document.querySelector(`.pasos [data-paso="${paso}"]`).classList.toggle('hecho', hecho);
   };
   poner(1, n ? `${n} ${n === 1 ? 'producto' : 'productos'}` : 'Pendiente', n > 0);
-  poner(2, e.cerrado ? `Terminado ${e.cerrado.hora}` : n ? `${e.contados} de ${e.productos} contados` : 'Pendiente', !!e.cerrado);
+  poner(2, e.cerrado ? `Terminado ${e.cerrado.hora}` : n ? `${e.contados + e.congeladosContados} de ${e.productos + e.congelados} contados` : 'Pendiente', !!e.cerrado);
   const r = e.cerrado ? resultadoDelDia(fecha) : null;
   poner(3, e.cerrado ? textoResultado(r?.resultado) : 'Tras el cierre', !!r?.resultado);
 }
@@ -257,6 +258,52 @@ function filaGenero(p) {
   </div>`;
 }
 
+// ---------- Congelado: lo que llega ----------
+
+// Los congelados en uso y, de los archivados, los que aún tienen algo en la tienda
+const congeladosLista = () => estado.productos
+  .filter((p) => esCongelado(p) && (!p.archivado || (lineaCongelado(estado.dias, p, fecha).habia || 0) > 0))
+  .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+
+function textoStockCongelado(p) {
+  const l = lineaCongelado(estado.dias, p, fecha);
+  if (l.inicio == null) return '';
+  return l.llega ? `Había ${cantidad(p, l.inicio)} + llegan ${cantidad(p, l.llega)} = ${cantidad(p, l.habia)} en la tienda` : `En la tienda: ${cantidad(p, l.inicio)}`;
+}
+
+function filaLlegada(p) {
+  const l = lineaCongelado(estado.dias, p, fecha);
+  const nombre = escapar(p.nombre);
+  if (l.inicio == null) {
+    return `<div class="fila-cierre">
+      <p class="fc-nombre"><strong>${nombre}</strong>${p.formato ? ` <small>${escapar(p.formato)}</small>` : ''}</p>
+      <p class="fc-estado pendiente">${ICONO.reloj} Falta saber cuánto hay. Apúntalo en la sección Congelado.</p>
+    </div>`;
+  }
+  return `<div class="fila-cierre${l.llega ? ' con-dato' : ''}" data-llegada="${p.id}">
+    <p class="fc-nombre"><strong>${nombre}</strong>${p.formato ? ` <small>${escapar(p.formato)}</small>` : ''}</p>
+    <label class="fg-campo">${porUnidades(p) ? 'Unidades que llegan' : 'Kilos que llegan'}
+      <input type="text" class="num" inputmode="${porUnidades(p) ? 'numeric' : 'decimal'}" data-llega value="${milesimasATexto(l.llega)}" placeholder="0" autocomplete="off" aria-label="${porUnidades(p) ? 'Unidades' : 'Kilos'} de ${nombre} que llegan">
+    </label>
+    <p class="fc-estado" role="status">${textoStockCongelado(p)}</p>
+  </div>`;
+}
+
+function tarjetaCongelado() {
+  const lista = congeladosLista();
+  if (!lista.length) return '';
+  return `<section class="tarjeta">
+    <header class="cat-cab">
+      <img src="assets/iconos/${TIPOS.congelado.icono}.svg" alt="" width="44" height="44">
+      <div><h2>${TIPOS.congelado.nombre}</h2><p class="ayuda">Apunta solo lo que llega hoy del almacén. Lo demás sigue de un día para otro.</p></div>
+    </header>
+    <details class="otros">
+      <summary>Lo que llega hoy (${lista.filter((p) => lineaCongelado(estado.dias, p, fecha).llega).length} con llegada)</summary>
+      ${lista.map(filaLlegada).join('')}
+    </details>
+  </section>`;
+}
+
 function panelGenero() {
   const lista = delGenero();
   if (!lista.length) {
@@ -303,7 +350,7 @@ function panelGenero() {
       <p class="ayuda">Apunta los kilos con los que empieza cada producto. El precio y el coste salen con los del último día: cámbialos solo si hoy son otros. Se guarda solo, mientras escribes.</p>
       <p class="ayuda">Si a mitad del día subes o bajas un precio, pulsa <strong>Cambiar precio</strong> en ese producto y pesa lo que queda en el mostrador. Así la caja sigue cuadrando.</p>
     </section>
-    <fieldset class="sin-marco"${cerrado ? ' disabled' : ''}>${secciones}</fieldset>
+    <fieldset class="sin-marco"${cerrado ? ' disabled' : ''}>${secciones}${tarjetaCongelado()}</fieldset>
     <p class="ayuda" id="dia-sin-resultados" hidden>Ningún producto coincide con la búsqueda.</p>
     <div class="barra-total" id="dia-total" role="status"></div>
     <h2>Resumen del género</h2>
@@ -465,6 +512,24 @@ export function prepararDia() {
       ponerFondo(estado.dias, fecha, valor);
       comprobarGuardado(guardar());
       if (paso === 2) actualizarCierre(fecha);
+      return;
+    }
+
+    if (i.hasAttribute('data-llega')) {
+      const fila = i.closest('[data-llegada]');
+      const p = producto(fila.dataset.llegada);
+      const texto = i.value.trim();
+      const valor = texto ? (porUnidades(p) ? aUnidades(texto) : aMilesimas(texto)) : null;
+      if (texto && valor == null) {
+        i.setAttribute('aria-invalid', 'true');
+        fila.querySelector('.fc-estado').textContent = porUnidades(p) ? 'Escribe un número entero de unidades.' : 'Número mal escrito: no se ha guardado.';
+        return;
+      }
+      i.removeAttribute('aria-invalid');
+      ponerLlegada(estado.dias, p, fecha, valor);
+      comprobarGuardado(guardar());
+      fila.classList.toggle('con-dato', !!valor);
+      fila.querySelector('.fc-estado').textContent = textoStockCongelado(p);
       return;
     }
 

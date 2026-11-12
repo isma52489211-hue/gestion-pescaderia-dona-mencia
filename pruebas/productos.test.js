@@ -64,7 +64,7 @@ test('el id sale del nombre y no se repite', () => {
 
 test('un producto nuevo queda completo y sin archivar', () => {
   const p = crearProducto({ nombre: '  Merluza  ', tipo: 'fresco' });
-  assert.deepEqual(p, { id: 'merluza', nombre: 'Merluza', tipo: 'fresco', unidad: 'kg', pvp: null, coste: null, mermaPct: 0, formato: '', archivado: false });
+  assert.deepEqual(p, { id: 'merluza', nombre: 'Merluza', tipo: 'fresco', unidad: 'kg', pvp: null, coste: null, mermaPct: 0, formato: '', stockIdeal: null, archivado: false });
 });
 
 test('cambiar el nombre no cambia el id (los días antiguos lo siguen encontrando)', () => {
@@ -124,4 +124,16 @@ test('no acepta archivos que no son una copia de esta app', () => {
   assert.ok(revisarCopia({ app: 'caja-dona-mencia', datos: { productos: 'x', dias: {} } }).error);
   assert.ok(revisarCopia({ app: 'caja-dona-mencia', datos: { productos: [{ nombre: 'sin id' }], dias: {} } }).error);
   assert.ok(revisarCopia({ app: 'caja-dona-mencia', datos: { version: 99, productos: [], dias: {} } }).error);
+});
+
+test('congelado: stock ideal, que no pasa a otros tipos y no se pierde el stock de partida', async () => {
+  const { crearProducto, cambiarProducto, revisarProducto } = await import('../js/nucleo/productos.js');
+  const c = crearProducto({ nombre: 'Gamba pelada', tipo: 'congelado', unidad: 'ud', stockIdeal: 10000 }, []);
+  assert.equal(c.stockIdeal, 10000);
+  assert.equal(crearProducto({ nombre: 'Merluza', tipo: 'fresco', stockIdeal: 5000 }, []).stockIdeal, null);
+  const conStock = { ...c, stockPartida: { fecha: '2026-12-01', cantidad: 6000 } };
+  const cambiado = cambiarProducto(conStock, { nombre: 'Gamba pelada', tipo: 'congelado', unidad: 'ud', stockIdeal: 12000 });
+  assert.deepEqual(cambiado.stockPartida, { fecha: '2026-12-01', cantidad: 6000 });
+  assert.equal(cambiado.stockIdeal, 12000);
+  assert.equal(revisarProducto({ nombre: 'Otra', tipo: 'congelado', stockIdeal: -1 }, []).errores.stockIdeal, 'El stock ideal no puede ser negativo.');
 });

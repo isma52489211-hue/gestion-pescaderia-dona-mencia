@@ -9,10 +9,12 @@ import { activos } from './nucleo/productos.js';
 import { resumenGenero } from './nucleo/dia.js';
 import { estadoCierre } from './nucleo/cierre.js';
 import { resultadoDelDia, textoResultado } from './vistas/cuadre.js';
+import { pintarCongelado, prepararCongelado } from './vistas/congelado.js';
+import { reposicion, sinStockDePartida } from './nucleo/congelado.js';
 import { hoyISO, fechaLarga, fechaCorta, sumarDias, abreEseDia, HORARIO } from './nucleo/fechas.js';
 import { fmtEuros, fmtKg, fmtUnidades } from './nucleo/numeros.js';
 
-export const VERSION = '0.6';
+export const VERSION = '0.7';
 
 // ---------- Plan de construcción ----------
 
@@ -23,7 +25,7 @@ const PASOS = [
   { titulo: 'Cambios de precio', texto: 'Subir o bajar un precio a mitad del día sin descuadrar la caja.', hecho: true },
   { titulo: 'Cierre guiado a ciegas', texto: 'Producto a producto, sin casillas olvidadas, con retiradas, mermas y gastos detallados.', hecho: true },
   { titulo: 'Cuadre', texto: 'Lo que debería haber frente a lo cobrado, con margen, ganancia y avisos.', hecho: true },
-  { titulo: 'Congelado', texto: 'Stock de la tienda y lista de reposición.' },
+  { titulo: 'Congelado', texto: 'Stock de la tienda y lista de reposición.', hecho: true },
   { titulo: 'Resumen', texto: 'Semana y mes, con ganancia y exportación.' },
   { titulo: 'Plantilla con foto', texto: 'Rellenar el género con una foto de la hoja impresa.' },
   { titulo: 'Nube y PIN', texto: 'Para el final, si decides aplicarlo: datos compartidos entre aparatos y cada persona con su PIN.' },
@@ -90,6 +92,10 @@ function pintarInicio() {
     if (c.productos && !c.cerrado) avisos.push([`Cierre sin terminar: ${fechaCorta(f)}`, 'El género está apuntado pero falta terminar el cierre.', 'cierre', f]);
   }
   if (r.sinPrecio.length) avisos.push(['Falta el precio de venta de hoy', r.sinPrecio.join(', ')]);
+  const sinStock = sinStockDePartida(estado.productos, hoy);
+  if (sinStock.length) avisos.push(['Falta saber cuánto congelado hay', sinStock.map((p) => p.nombre).join(', '), 'congelado']);
+  const reponer = reposicion(estado.dias, estado.productos, hoy).filter((x) => x.falta > 0);
+  if (reponer.length) avisos.push(['Hay que reponer congelado', reponer.map((x) => x.producto.nombre).join(', '), 'congelado']);
   if (r.sinCoste.length) avisos.push(['Falta el coste de hoy', r.sinCoste.join(', ')]);
   $('inicio-estado').innerHTML = bloque + avisos.map(([titulo, texto, ir = 'dia', f = hoy]) => `<div class="aviso">${ICONO.alerta}
     <div><strong>${titulo}</strong><p>${escapar(texto)}</p></div>
@@ -101,11 +107,6 @@ const horaTexto = (h) => h.replace(/^0/, '');
 // ---------- Secciones todavía en construcción ----------
 
 const EN_OBRAS = {
-  congelado: {
-    titulo: 'Congelado',
-    texto: 'Aquí verás el stock de congelado de la tienda y la lista de lo que hay que reponer, lista para enviar por WhatsApp.',
-    pasos: 'Paso 7',
-  },
   resumen: {
     titulo: 'Resumen',
     texto: 'Aquí verás la semana y el mes: lo vendido, lo cobrado, la diferencia y la ganancia, por día y por producto.',
@@ -135,6 +136,7 @@ function mostrarVista(nombre) {
   if (nombre === 'inicio') pintarInicio();
   if (nombre === 'dia') pintarDia();
   if (nombre === 'mas') pintarMas(VERSION);
+  if (nombre === 'congelado') pintarCongelado();
   if (EN_OBRAS[nombre]) pintarEnObras(nombre);
   window.scrollTo(0, 0);
 }
@@ -154,6 +156,8 @@ document.addEventListener('click', (e) => {
   } else if (destino === 'cierre' || destino === 'cuadre') {
     irAlDia(boton.dataset.fecha, destino === 'cierre' ? 2 : 3);
     mostrarVista('dia');
+  } else if (destino === 'congelado') {
+    mostrarVista('congelado');
   } else if (destino === 'productos') {
     abrirPaginaMas('productos');
     mostrarVista('mas');
@@ -164,6 +168,7 @@ document.addEventListener('click', (e) => {
 
 prepararMas();
 prepararDia();
+prepararCongelado();
 protegerDatos();
 pintarPasos();
 mostrarVista('inicio');

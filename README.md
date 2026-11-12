@@ -15,6 +15,7 @@ En el móvil se puede instalar desde el menú del navegador («Añadir a pantall
 - **Cuadre de género contra caja** (no hay báscula con total del día).
 - **Coste y ganancia**, **cambios de precio durante el día** y **gastos de caja detallados**.
 - La tienda abre de **martes a sábado, de 8:30 a 13:30**.
+- El congelado se cobra en la misma caja: **se cuenta todo en cada cierre** (o «No se ha vendido nada») y lo vendido entra en el cuadre.
 - El sobrante no pasa solo al día siguiente: cada día se apunta el género con el que se empieza.
 - Los productos **se archivan, no se borran**, para no romper los días ya apuntados.
 - **De momento los datos se guardan en el aparato**, con copia de seguridad descargable. La nube y los PIN se dejan para el final, por decidir.
@@ -27,7 +28,7 @@ En el móvil se puede instalar desde el menú del navegador («Añadir a pantall
 4. Cambios de precio: a mitad del día, pesando lo que queda en el mostrador. **Hecho.**
 5. Cierre guiado a ciegas: lo que sobra producto a producto, retiradas y mermas, gastos con concepto y caja (con recuento por billetes). **Hecho.**
 6. Cuadre: sale al terminar el cierre, con el detalle por producto, la caja y la ganancia. **Hecho.**
-7. Congelado.
+7. Congelado: stock de la tienda, lo que llega, recuento en cada cierre y lista de reposición por WhatsApp. **Hecho.**
 8. Resumen.
 9. Plantilla con foto.
 10. Nube y PIN (por decidir): datos compartidos entre aparatos y cada persona con su PIN.
@@ -42,6 +43,7 @@ Sin instalaciones ni compilación: HTML, CSS y JavaScript.
   - `numeros.js`: el dinero se guarda en céntimos enteros y las cantidades en milésimas enteras, para que las cuentas sean exactas.
   - `cuadre.js`: lo vendido por producto, lo cobrado en caja y la comparación.
   - `dia.js`: el género de cada día (precio propuesto, avisos, resumen y cambios de precio) y `fechas.js` (con el horario).
+  - `congelado.js`: stock del congelado (de partida, lo que llega, lo que queda) y reposición.
   - `cierre.js`: el cierre a ciegas (lo que sobra, retiradas y mermas, gastos, caja, terminar y reabrir).
   - `productos.js`: reglas del catálogo (nombres sin repetir, ganancia por kilo, archivar).
   - `copia.js`: comprobación de una copia de seguridad antes de restaurarla.
@@ -55,6 +57,7 @@ Sin instalaciones ni compilación: HTML, CSS y JavaScript.
 - Producto: `inicio − sobra − retiradas y mermas = vendido`, menos el % de merma de limpieza si lo tiene. Con cambios de precio, cada tramo se valora a su precio.
 - Un producto **sin contar** no es lo mismo que uno del que **no sobra nada**: mientras quede algo sin contar no hay cuadre.
 - Cierre a ciegas: mientras se cierra no se ve con cuánto se empezó ni lo que debería haber en caja. Para terminarlo hace falta lo que sobra de todo y la caja completa (fondo, efectivo, tarjeta y Bizum; 0 vale, vacío no). Terminado, el día queda bloqueado hasta que se reabra.
+- Congelado: `lo que había + lo que llega − lo que queda − retiradas y mermas = vendido`. El stock pasa solo de un día a otro; la primera vez se apunta lo que hay. Reposición: lo que falta para el stock ideal de cada producto.
 - Caja: `efectivo contado − fondo + gastos y retiradas de dinero + tarjeta + Bizum = cobrado`.
 - La caja cuadra si la diferencia está dentro del margen (3 € o el 1 % de lo vendido, lo que sea mayor). La diferencia exacta se enseña siempre.
 - El cuadre solo se ve con el cierre terminado, y solo si todo lo vendido tiene precio.

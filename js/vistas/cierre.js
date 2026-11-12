@@ -13,6 +13,7 @@ import {
 } from '../nucleo/cierre.js';
 import { aCentimos, aMilesimas, aUnidades, fmtEuros, fmtKg, fmtUnidades, centimosATexto, milesimasATexto } from '../nucleo/numeros.js';
 import { hoyISO, horaActual } from '../nucleo/fechas.js';
+import { congeladosDelDia, lineaCongelado, ponerQueda, ponerSinVenta, sinStockDePartida } from '../nucleo/congelado.js';
 
 const TIPOS_GENERO = ['fresco', 'gordo', 'marisco'];
 
@@ -35,6 +36,10 @@ const ERRORES = {
   cerrado: 'El cierre está terminado. Para cambiar algo, reábrelo.',
 };
 
+// El congelado que había en la tienda ese día, en orden alfabético
+const congelados = (fecha) => congeladosDelDia(estado.dias, estado.productos, fecha)
+  .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+
 const fmtDenominacion = (c) => (c >= 100 ? `${c / 100} €` : `0,${String(c).padStart(2, '0')} €`);
 
 // ---------- Pintar ----------
@@ -48,6 +53,19 @@ function filaSobra(p, fecha) {
       <input type="text" class="num" inputmode="${porUnidades(p) ? 'numeric' : 'decimal'}" data-sobra value="${milesimasATexto(sobra)}" placeholder="" autocomplete="off" aria-label="${porUnidades(p) ? 'Unidades' : 'Kilos'} que sobran de ${nombre}">
     </label>
     <button type="button" class="btn secundario" data-nada>No sobra nada</button>
+    <p class="fc-estado" role="status"></p>
+  </div>`;
+}
+
+function filaCongelado(p, fecha) {
+  const l = lineaCongelado(estado.dias, p, fecha);
+  const nombre = escapar(p.nombre);
+  return `<div class="fila-cierre" data-cong="${p.id}">
+    <p class="fc-nombre"><strong>${nombre}</strong>${p.formato ? ` <small>${escapar(p.formato)}</small>` : ''}</p>
+    <label class="fg-campo">${porUnidades(p) ? 'Unidades que quedan' : 'Kilos que quedan'}
+      <input type="text" class="num" inputmode="${porUnidades(p) ? 'numeric' : 'decimal'}" data-queda value="${l.sinVenta ? '' : milesimasATexto(l.queda)}" autocomplete="off" aria-label="${porUnidades(p) ? 'Unidades' : 'Kilos'} que quedan de ${nombre}">
+    </label>
+    <button type="button" class="btn secundario" data-sin-venta>No se ha vendido nada</button>
     <p class="fc-estado" role="status"></p>
   </div>`;
 }
@@ -94,6 +112,14 @@ export function panelCierre(fecha) {
   const cerrado = d.cerrado;
   const desglose = caja.desglose || {};
   const hoy = fecha === hoyISO();
+  const cong = congelados(fecha);
+  const opciones = [...lista, ...cong];
+  const sinStock = sinStockDePartida(estado.productos, fecha);
+  const avisoStock = sinStock.length ? `<div class="aviso">${ICONO.alerta}
+      <div><strong>Falta saber cuánto congelado hay de: ${sinStock.map((p) => escapar(p.nombre)).join(', ')}</strong><p>Apúntalo en la sección Congelado (o archiva el producto si no se vende).</p></div>
+      <button type="button" class="btn secundario" data-ir="congelado">Ir a congelado</button></div>` : '';
+  let n = 1;
+  const num = () => `<span class="paso-num">${++n}</span>`;
 
   return `<div id="cierre-cerrado">${cerrado ? `<div class="aviso ok">${ICONO.ok}
       <div><strong>Cierre terminado a las ${escapar(cerrado.hora)}</strong><p>Ya no se puede cambiar nada de este día. Si hay que corregir algo, reabre el cierre.</p></div>
@@ -107,14 +133,21 @@ export function panelCierre(fecha) {
       ${lista.map((p) => filaSobra(p, fecha)).join('')}
     </section>
 
+    ${cong.length || sinStock.length ? `<section class="tarjeta">
+      <h2>${num()} Congelado</h2>
+      <p class="ayuda">Cuenta lo que queda de cada congelado. Si de alguno no se ha vendido nada, pulsa <strong>No se ha vendido nada</strong>.</p>
+      ${avisoStock}
+      ${cong.length ? `<p class="progreso" id="cierre-progreso-cong" role="status"></p>${cong.map((p) => filaCongelado(p, fecha)).join('')}` : ''}
+    </section>` : ''}
+
     <section class="tarjeta">
-      <h2><span class="paso-num">2</span> Retiradas y mermas</h2>
+      <h2>${num()} Retiradas y mermas</h2>
       <p class="ayuda"><strong>Retirada:</strong> género que se aparta sin venderlo (para congelar, para otra tienda, para casa…). <strong>Merma:</strong> género que se tira. Las dos se restan de lo vendido. Se pueden apuntar durante el día.</p>
       <div id="cierre-salidas">${listaSalidas(fecha)}</div>
       <form class="form-cierre" id="form-salida" novalidate>
         <div class="fc-campos">
           <label>Producto
-            <select data-salida="producto">${lista.map((p) => `<option value="${p.id}">${escapar(p.nombre)}</option>`).join('')}</select>
+            <select data-salida="producto">${opciones.map((p) => `<option value="${p.id}">${escapar(p.nombre)}</option>`).join('')}</select>
           </label>
           <label>Tipo
             <select data-salida="tipo">${Object.entries(TIPOS_SALIDA).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
@@ -132,7 +165,7 @@ export function panelCierre(fecha) {
     </section>
 
     <section class="tarjeta">
-      <h2><span class="paso-num">3</span> Dinero que sale del cajón</h2>
+      <h2>${num()} Dinero que sale del cajón</h2>
       <p class="ayuda"><strong>Gasto:</strong> se paga algo con dinero de la caja (hielo, bolsas…). <strong>Retirada de dinero:</strong> se saca dinero del cajón (al banco, para cambio…). Siempre con su concepto.</p>
       <div id="cierre-movimientos">${listaMovimientos(fecha)}</div>
       <form class="form-cierre" id="form-movimiento" novalidate>
@@ -153,7 +186,7 @@ export function panelCierre(fecha) {
     </section>
 
     <section class="tarjeta">
-      <h2><span class="paso-num">4</span> Caja</h2>
+      <h2>${num()} Caja</h2>
       <p class="ayuda">Cuenta el efectivo del cajón, fondo incluido. Si hoy no hubo tarjeta o Bizum, pon 0.</p>
       <div class="rejilla">
         ${campoCaja('fondo', caja)}
@@ -185,6 +218,8 @@ export function panelCierre(fecha) {
 function textoFalta(f) {
   if (f.tipo === 'sin-genero') return 'No hay género apuntado este día.';
   if (f.tipo === 'sin-contar') return `Falta lo que sobra de: ${f.productos.map(escapar).join(', ')}.`;
+  if (f.tipo === 'sin-stock') return `Falta saber cuánto congelado hay de: ${f.productos.map(escapar).join(', ')}. Apúntalo en la sección Congelado.`;
+  if (f.tipo === 'congelado-sin-contar') return `Falta contar el congelado: ${f.productos.map(escapar).join(', ')}.`;
   if (f.tipo === 'sin-precio') return `Falta el precio de venta de: ${f.productos.map(escapar).join(', ')}. Ponlo en el paso 1 (Género).`;
   const extra = f.campo === 'tarjeta' || f.campo === 'bizum' ? ' (si no hubo, pon 0)' : '';
   const nombre = CAMPOS_CAJA[f.campo];
@@ -209,11 +244,34 @@ function actualizarFilaSobra(fila, fecha) {
   }
 }
 
+function actualizarFilaCongelado(fila, fecha) {
+  const p = producto(fila.dataset.cong);
+  const l = lineaCongelado(estado.dias, p, fecha);
+  const input = fila.querySelector('[data-queda]');
+  const estadoFila = fila.querySelector('.fc-estado');
+  fila.classList.toggle('con-dato', l.contado);
+  if (input.getAttribute('aria-invalid') === 'true') {
+    estadoFila.className = 'fc-estado mal';
+    estadoFila.textContent = porUnidades(p) ? 'Escribe un número entero de unidades, por ejemplo 6.' : 'Número mal escrito: no se ha guardado. Escribe, por ejemplo, 2,5.';
+  } else if (l.sinVenta) {
+    estadoFila.className = 'fc-estado ok';
+    estadoFila.innerHTML = `${ICONO.ok} No se ha vendido nada`;
+  } else if (l.contado) {
+    estadoFila.className = 'fc-estado ok';
+    estadoFila.innerHTML = `${ICONO.ok} Quedan ${cantidad(p, l.queda)}`;
+  } else {
+    estadoFila.className = 'fc-estado pendiente';
+    estadoFila.innerHTML = `${ICONO.reloj} Sin contar`;
+  }
+}
+
 // Progreso, lo que falta y el estado de los pasos. Devuelve el estado del cierre.
 export function actualizarCierre(fecha) {
   const e = estadoCierre(estado.dias, estado.productos, fecha);
   const progreso = $('cierre-progreso');
   if (progreso) progreso.innerHTML = `<strong>${e.contados} de ${e.productos}</strong> productos contados`;
+  const progresoCong = $('cierre-progreso-cong');
+  if (progresoCong) progresoCong.innerHTML = `<strong>${e.congeladosContados} de ${e.congelados}</strong> congelados contados`;
 
   const faltan = $('cierre-faltan');
   if (faltan) {
@@ -235,7 +293,8 @@ export function actualizarCierre(fecha) {
 
 export function pintarCierre(contenedor, fecha) {
   contenedor.innerHTML = panelCierre(fecha);
-  contenedor.querySelectorAll('.fila-cierre').forEach((f) => actualizarFilaSobra(f, fecha));
+  contenedor.querySelectorAll('.fila-cierre[data-id]').forEach((f) => actualizarFilaSobra(f, fecha));
+  contenedor.querySelectorAll('.fila-cierre[data-cong]').forEach((f) => actualizarFilaCongelado(f, fecha));
   pintarTotalDesglose(fecha);
   return actualizarCierre(fecha);
 }
@@ -270,6 +329,26 @@ export function prepararCierre(vista, fechaDe, alCambiar, repintar) {
         guardado();
       }
       actualizarFilaSobra(fila, fecha);
+      actualizarCierre(fecha);
+      alCambiar();
+      return;
+    }
+
+    if (i.hasAttribute('data-queda')) {
+      const fila = i.closest('.fila-cierre');
+      const p = producto(fila.dataset.cong);
+      const texto = i.value.trim();
+      const valor = texto ? leerCantidad(p, texto) : null;
+      if (texto && valor == null) i.setAttribute('aria-invalid', 'true');
+      else {
+        i.removeAttribute('aria-invalid');
+        // Vaciar la casilla de un «no se ha vendido nada» no lo borra: solo cambia si se escribe algo
+        if (texto || !lineaCongelado(estado.dias, p, fecha).sinVenta) {
+          ponerQueda(estado.dias, p, fecha, valor);
+          guardado();
+        }
+      }
+      actualizarFilaCongelado(fila, fecha);
       actualizarCierre(fecha);
       alCambiar();
       return;
@@ -388,8 +467,23 @@ export function prepararCierre(vista, fechaDe, alCambiar, repintar) {
       actualizarCierre(fecha);
       alCambiar();
       // Al siguiente producto sin contar, para ir uno detrás de otro
-      const siguiente = [...vista.querySelectorAll('.fila-cierre')].find((f) => !f.classList.contains('con-dato'));
+      const siguiente = [...vista.querySelectorAll('.fila-cierre[data-id]')].find((f) => !f.classList.contains('con-dato'));
       siguiente?.querySelector('[data-sobra]').focus();
+      return;
+    }
+
+    if (boton.hasAttribute('data-sin-venta')) {
+      const fila = boton.closest('.fila-cierre');
+      const input = fila.querySelector('[data-queda]');
+      input.value = '';
+      input.removeAttribute('aria-invalid');
+      ponerSinVenta(estado.dias, producto(fila.dataset.cong), fecha);
+      guardado();
+      actualizarFilaCongelado(fila, fecha);
+      actualizarCierre(fecha);
+      alCambiar();
+      const siguiente = [...vista.querySelectorAll('.fila-cierre[data-cong]')].find((f) => !f.classList.contains('con-dato'));
+      siguiente?.querySelector('[data-queda]').focus();
       return;
     }
 

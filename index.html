@@ -99,9 +99,16 @@
           </select>
         </label>
       </div>
-      <label id="l-formato" hidden>Formato
-        <input type="text" id="f-formato" autocomplete="off" placeholder="Ej.: bolsa de 1 kg">
-      </label>
+      <div class="rejilla" id="l-congelado" hidden>
+        <label>Formato
+          <input type="text" id="f-formato" autocomplete="off" placeholder="Ej.: bolsa de 1 kg">
+        </label>
+        <label><span id="t-ideal">Stock ideal en la tienda (kg)</span>
+          <input type="text" class="num" id="f-ideal" placeholder="" autocomplete="off" aria-describedby="a-ideal e-stockIdeal">
+          <small class="ayuda-campo" id="a-ideal">Lo que conviene tener. Sirve para la lista de reposición.</small>
+          <small class="error" id="e-stockIdeal" hidden></small>
+        </label>
+      </div>
       <div class="rejilla">
         <label><span id="t-pvp">Precio de venta habitual (€/kg)</span>
           <input type="text" class="num" inputmode="decimal" id="f-pvp" placeholder="0,00" autocomplete="off" aria-describedby="e-pvp">
@@ -112,7 +119,7 @@
           <small class="error" id="e-coste" hidden></small>
         </label>
       </div>
-      <label>Merma de limpieza (%)
+      <label id="l-merma">Merma de limpieza (%)
         <input type="text" class="num" inputmode="decimal" id="f-merma" placeholder="0" autocomplete="off" aria-describedby="a-merma e-mermaPct">
         <small class="ayuda-campo" id="a-merma">Solo si se pierde peso al limpiarlo (salmón, atún). Si no, déjalo vacío.</small>
         <small class="error" id="e-mermaPct" hidden></small>

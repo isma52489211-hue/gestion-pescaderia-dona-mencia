@@ -5,6 +5,7 @@
 //           cantidades en milésimas, dinero en céntimos. «cambios»: cambios de precio durante el día.
 //   caja:   { fondo: 15000, contado, tarjeta, bizum, desglose: { 5000: 2, … }, movimientos: [{ tipo, importe, concepto, hora }] },
 //   salidas: [{ producto, tipo: 'retirada' | 'merma', cantidad, motivo, hora }],   ver cierre.js
+//   congelado: { 'cong-gamba': { llega, queda, sinVenta, pvp, coste } },             ver congelado.js
 //   cerrado: { hora: '13:40' },
 // }
 
@@ -21,7 +22,7 @@ export const diaVacio = () => ({ genero: {}, caja: {} });
 // Un día sin nada apuntado no se guarda
 export const sinDatos = (dia) => !Object.keys(dia.genero || {}).length
   && Object.values(dia.caja || {}).every((v) => v == null || (Array.isArray(v) && !v.length) || (typeof v === 'object' && !Object.keys(v).length))
-  && !dia.salidas?.length && !dia.cerrado;
+  && !dia.salidas?.length && !dia.cerrado && !Object.keys(dia.congelado || {}).length;
 
 // El último valor que se usó para un producto antes de esa fecha
 function ultimoValor(dias, fecha, id, campo) {

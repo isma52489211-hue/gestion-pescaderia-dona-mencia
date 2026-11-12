@@ -9,6 +9,8 @@
 //   coste     coste de compra habitual, en céntimos (null = sin poner)
 //   mermaPct  % de peso que se pierde al limpiar
 //   formato   texto libre («bolsa de 1 kg»)
+//   stockIdeal  congelado: cantidad que conviene tener en la tienda, en milésimas (null = sin poner)
+//   stockPartida congelado: { fecha, cantidad } lo que había la primera vez (ver congelado.js)
 //   archivado true = ya no sale en las listas, pero los días antiguos lo siguen contando
 
 export const TIPOS = {
@@ -31,6 +33,7 @@ function limpiar(datos) {
     coste: datos.coste ?? null,
     mermaPct: datos.mermaPct || 0,
     formato: String(datos.formato ?? '').trim(),
+    stockIdeal: datos.tipo === 'congelado' ? datos.stockIdeal ?? null : null,
   };
 }
 
@@ -52,6 +55,7 @@ export function revisarProducto(datos, catalogo = [], idPropio = null) {
   if (p.pvp != null && !(Number.isInteger(p.pvp) && p.pvp > 0)) errores.pvp = 'El precio de venta tiene que ser mayor que 0.';
   if (p.coste != null && !(Number.isInteger(p.coste) && p.coste >= 0)) errores.coste = 'El coste no puede ser negativo.';
   if (!(p.mermaPct >= 0 && p.mermaPct < 100)) errores.mermaPct = 'La merma tiene que estar entre 0 y 99 %.';
+  if (p.stockIdeal != null && !(Number.isInteger(p.stockIdeal) && p.stockIdeal >= 0)) errores.stockIdeal = 'El stock ideal no puede ser negativo.';
 
   if (!errores.pvp && !errores.coste && !errores.mermaPct) {
     const g = gananciaPorUnidad(p);

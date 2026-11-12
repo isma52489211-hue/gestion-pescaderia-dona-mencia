@@ -65,7 +65,9 @@ function tarjetaCaja(r) {
 function tarjetaProductos(r) {
   const filas = r.lineas.map((l) => {
     const u = l.unidad === 'ud' ? 'ud' : 'kg';
-    const cuenta = [`Empezó ${cantidad(l.unidad, l.inicio)}`, `sobran ${cantidad(l.unidad, l.sobra)}`];
+    const cuenta = l.congelado
+      ? [`Había ${cantidad(l.unidad, l.inicio)}`, `quedan ${cantidad(l.unidad, l.sobra)}`]
+      : [`Empezó ${cantidad(l.unidad, l.inicio)}`, `sobran ${cantidad(l.unidad, l.sobra)}`];
     if (l.salidas) cuenta.push(`retiradas y mermas ${cantidad(l.unidad, l.salidas)}`);
     const merma = l.mermaPct ? ` (− ${String(l.mermaPct).replace('.', ',')} % de limpieza: se cobran ${cantidad(l.unidad, l.neto)})` : '';
     const tramos = l.tramos.length > 1 || l.mermaPct
@@ -73,7 +75,7 @@ function tarjetaProductos(r) {
       : `<small>× ${l.tramos[0]?.pvp == null ? '¿?' : `${fmtEuros(l.tramos[0].pvp)}/${u}`}</small>`;
     const avisos = l.avisos.map((a) => AVISOS_LINEA[a]).filter(Boolean);
     return `<div class="linea linea-producto">
-      <span><strong>${escapar(l.nombre)}</strong>
+      <span><strong>${escapar(l.nombre)}</strong>${l.congelado ? ' <span class="etiqueta">Congelado</span>' : ''}
         <small>${cuenta.join(' − ')} = vendido ${cantidad(l.unidad, l.vendido)}${merma}</small>
         ${l.vendido ? tramos : ''}
         ${avisos.map((a) => `<small class="en-ojo">⚠ ${a}</small>`).join('')}
