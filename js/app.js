@@ -15,7 +15,7 @@ import { reposicion, sinStockDePartida } from './nucleo/congelado.js';
 import { hoyISO, fechaLarga, fechaCorta, sumarDias, abreEseDia, HORARIO } from './nucleo/fechas.js';
 import { fmtEuros, fmtKg, fmtUnidades } from './nucleo/numeros.js';
 
-export const VERSION = '0.8';
+export const VERSION = '0.9';
 
 // ---------- Plan de construcción ----------
 
@@ -28,7 +28,7 @@ const PASOS = [
   { titulo: 'Cuadre', texto: 'Lo que debería haber frente a lo cobrado, con margen, ganancia y avisos.', hecho: true },
   { titulo: 'Congelado', texto: 'Stock de la tienda y lista de reposición.', hecho: true },
   { titulo: 'Resumen', texto: 'Semana y mes, con ganancia y exportación.', hecho: true },
-  { titulo: 'Plantilla con foto', texto: 'Rellenar el género con una foto de la hoja impresa.' },
+  { titulo: 'Apuntar sin teclear', texto: 'Dictar o pegar el género, copiarlo de otro día y ajustar con − y +.', hecho: true },
   { titulo: 'Nube y PIN', texto: 'Para el final, si decides aplicarlo: datos compartidos entre aparatos y cada persona con su PIN.' },
 ];
 

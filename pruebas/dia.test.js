@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   valorPropuesto, lineaGenero, tieneGenero, ponerDato, ponerFondo, avisosLinea,
-  ventaPosible, resumenGenero, esHabitual, borrarDia,
+  ventaPosible, resumenGenero, esHabitual, borrarDia, diasConGenero, copiarGenero,
 } from '../js/nucleo/dia.js';
 import { hoyISO, sumarDias, esFecha, fechaLarga } from '../js/nucleo/fechas.js';
 
@@ -191,4 +191,36 @@ test('borrar un día', () => {
   assert.equal(borrarDia(dias, HOY), true);
   assert.deepEqual(dias, {});
   assert.equal(borrarDia(dias, HOY), false);
+});
+
+// ---------- Copiar el género de otro día ----------
+
+test('días con género para copiar: los anteriores, del más reciente al más antiguo', () => {
+  const dias = {};
+  ponerDato(dias, merluza, '2026-11-28', 'inicio', 5000);
+  ponerDato(dias, merluza, AYER, 'inicio', 8000);
+  ponerDato(dias, merluza, '2026-12-05', 'inicio', 1000); // después: no cuenta
+  ponerFondo(dias, '2026-11-30', 15000); // sin género: no cuenta
+  assert.deepEqual(diasConGenero(dias, HOY), [{ fecha: AYER, productos: 1 }, { fecha: '2026-11-28', productos: 1 }]);
+});
+
+test('copiar el género: solo lo que falta, sin tocar lo ya apuntado', () => {
+  const dias = {};
+  ponerDato(dias, merluza, AYER, 'inicio', 8000);
+  ponerDato(dias, merluza, AYER, 'pvp', 1390);
+  ponerDato(dias, salmon, AYER, 'inicio', 4000);
+  ponerDato(dias, salmon, HOY, 'inicio', 2000); // hoy ya tiene salmón
+  const r = copiarGenero(dias, [merluza, salmon, rape], AYER, HOY);
+  assert.deepEqual(r, { copiados: 1, yaTenian: 1 });
+  assert.equal(lineaGenero(dias, merluza, HOY).inicio, 8000);
+  assert.equal(lineaGenero(dias, merluza, HOY).pvp, 1390); // el precio del último día
+  assert.equal(lineaGenero(dias, salmon, HOY).inicio, 2000);
+});
+
+test('copiar no trae productos archivados ni a un día cerrado', () => {
+  const dias = {};
+  ponerDato(dias, merluza, AYER, 'inicio', 8000);
+  assert.deepEqual(copiarGenero(dias, [{ ...merluza, archivado: true }], AYER, HOY), { copiados: 0, yaTenian: 0 });
+  dias[HOY] = { genero: {}, caja: {}, cerrado: { hora: '13:30' } };
+  assert.equal(copiarGenero(dias, [merluza], AYER, HOY).error, 'cerrado');
 });

@@ -9,6 +9,9 @@ export const ICONO = {
   ok: svg('<circle cx="32" cy="32" r="22"/><path d="M22 33l7 7 14-16"/>'),
   alerta: svg('<circle cx="32" cy="32" r="22"/><path d="M32 20v15"/><path d="M32 43v1"/>'),
   reloj: svg('<circle cx="32" cy="32" r="22"/><path d="M32 20v13l8 5"/>'),
+  microfono: svg('<rect x="24" y="8" width="16" height="30" rx="8"/><path d="M15 30a17 17 0 0 0 34 0"/><path d="M32 47v9"/><path d="M23 56h18"/>'),
+  copiar: svg('<rect x="22" y="20" width="28" height="34" rx="4"/><path d="M14 44V14a4 4 0 0 1 4-4h24"/>'),
+  parar: svg('<rect x="19" y="19" width="26" height="26" rx="3"/>'),
   lista: svg('<path d="M24 18h28M24 32h28M24 46h28"/><path d="M12 15l3 3-3 3-3-3zM12 29l3 3-3 3-3-3zM12 43l3 3-3 3-3-3z"/>'),
 };
 

@@ -212,3 +212,34 @@ export function borrarDia(dias, fecha) {
   delete dias[fecha];
   return habia;
 }
+
+// ---------- Copiar el género de otro día ----------
+
+// Los últimos días con género antes de una fecha, del más reciente al más antiguo: [{ fecha, productos }]
+export function diasConGenero(dias, fecha, maximo = 10) {
+  return Object.keys(dias)
+    .filter((f) => f < fecha)
+    .sort()
+    .reverse()
+    .map((f) => ({ fecha: f, productos: Object.values(dias[f].genero || {}).filter((l) => l.inicio > 0).length }))
+    .filter((d) => d.productos > 0)
+    .slice(0, maximo);
+}
+
+// Copia los kilos de un día a otro para no teclearlos: solo en los productos que aún no tienen nada
+// (lo ya apuntado no se toca) y solo de los productos en uso. El precio y el coste son los propuestos.
+export function copiarGenero(dias, productos, desde, hacia) {
+  if (dias[hacia]?.cerrado) return { error: 'cerrado' };
+  const r = { copiados: 0, yaTenian: 0 };
+  for (const p of productos) {
+    const inicio = dias[desde]?.genero?.[p.id]?.inicio;
+    if (!(inicio > 0) || p.archivado || p.tipo === 'congelado') continue;
+    if (tieneGenero(dias, p, hacia)) {
+      r.yaTenian++;
+      continue;
+    }
+    ponerDato(dias, p, hacia, 'inicio', inicio);
+    r.copiados++;
+  }
+  return r;
+}

@@ -352,6 +352,11 @@ label.btn { margin: 0; font-size: 16px; }
 .fg-nota.ojo::before, .fg-nota.mal::before { content: "⚠ "; }
 .fg-nota.mal { color: var(--falta); font-weight: 900; }
 .fila-genero.con-dato { padding-right: 8px; }
+/* Botones − y + de los kilos: solo en los productos con género */
+.fg-pasos { display: none; grid-column: 1; gap: 6px; }
+.fila-genero.con-dato .fg-pasos { display: flex; }
+.fg-pasos .btn { flex: 1; min-width: 0; min-height: 44px; padding: 0 6px; font-family: var(--letra-dato); font-size: 18px; }
+@media (min-width: 700px) { .fg-pasos { grid-column: 2; } }
 @media (min-width: 700px) {
   .fila-genero { grid-template-columns: minmax(180px, 1.4fr) repeat(3, 1fr); align-items: end; gap: 4px 12px; }
   .fg-nombre { grid-column: 1; align-self: center; }
@@ -396,6 +401,28 @@ h2 .paso-num { display: inline-grid; vertical-align: middle; margin: -4px 6px 0 
 .fc-estado.mal { color: var(--falta); }
 .fc-estado.aviso-txt { color: var(--sobra); }
 .fc-estado.mal-txt { color: var(--falta); }
+
+/* ---------- Apuntar rápido: dictar o copiar ---------- */
+
+.btn .icono { width: 24px; height: 24px; }
+.rapido-botones .btn { flex: 1; min-width: 200px; }
+.panel-rapido textarea { min-height: 120px; font-size: 18px; line-height: 1.4; resize: vertical; margin-bottom: 8px; }
+.panel-rapido h3 { margin: 24px 0 8px; font-size: 18px; color: var(--azul); }
+.fila-revision {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; align-items: end;
+  padding: 12px 0 12px 12px; border-top: 1px solid var(--borde); border-left: 4px solid var(--falta);
+}
+.fila-revision.con-dato { border-left-color: var(--ok); }
+.fr-texto { grid-column: 1 / -1; margin: 0; font-size: 14px; color: var(--suave); font-style: italic; }
+.fr-producto { grid-column: 1 / -1; margin: 0; }
+.fila-revision .fg-campo input { margin-top: 2px; }
+.fila-revision [data-rev-quitar] { grid-column: 1 / -1; justify-self: start; min-height: 44px; font-size: 15px; padding: 0 16px; }
+.fila-revision .fc-estado { grid-column: 1 / -1; }
+@media (min-width: 700px) {
+  .fila-revision { grid-template-columns: minmax(200px, 2fr) 1fr 1fr auto; }
+  .fr-producto { grid-column: 1; }
+  .fila-revision [data-rev-quitar] { grid-column: 4; }
+}
 
 /* ---------- Resumen ---------- */
 

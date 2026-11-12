@@ -13,6 +13,7 @@ import { estadoCierre } from '../nucleo/cierre.js';
 import { esCongelado, lineaCongelado, ponerLlegada } from '../nucleo/congelado.js';
 import { pintarCierre, prepararCierre, actualizarCierre } from './cierre.js';
 import { panelCuadre, resultadoDelDia, textoResultado } from './cuadre.js';
+import { botonesRapido, prepararRapido } from './rapido.js';
 
 // El congelado lleva su propio control de stock (sección «Congelado»)
 const TIPOS_GENERO = ['fresco', 'gordo', 'marisco'];
@@ -253,6 +254,10 @@ function filaGenero(p) {
     <label class="fg-campo">Coste €/${u}
       <input type="text" class="num" inputmode="decimal" data-campo="coste" value="${centimosATexto(l.coste)}" placeholder="0,00" autocomplete="off" aria-label="Coste de ${nombre}">
     </label>
+    <div class="fg-pasos" role="group" aria-label="Cambiar los ${porUnidades(p) ? 'unidades' : 'kilos'} de ${nombre}">
+      <button type="button" class="btn secundario" data-mas="-1" aria-label="Quitar ${porUnidades(p) ? 'una unidad' : 'medio kilo'} de ${nombre}">− ${porUnidades(p) ? '1' : '0,5'}</button>
+      <button type="button" class="btn secundario" data-mas="1" aria-label="Añadir ${porUnidades(p) ? 'una unidad' : 'medio kilo'} a ${nombre}">+ ${porUnidades(p) ? '1' : '0,5'}</button>
+    </div>
     <p class="fg-nota" role="status"></p>
     <div class="fg-cambios">${bloqueCambios(p)}</div>
   </div>`;
@@ -349,7 +354,9 @@ function panelGenero() {
       </div>
       <p class="ayuda">Apunta los kilos con los que empieza cada producto. El precio y el coste salen con los del último día: cámbialos solo si hoy son otros. Se guarda solo, mientras escribes.</p>
       <p class="ayuda">Si a mitad del día subes o bajas un precio, pulsa <strong>Cambiar precio</strong> en ese producto y pesa lo que queda en el mostrador. Así la caja sigue cuadrando.</p>
+      ${cerrado ? '' : `<p class="ayuda"><strong>Para no teclear:</strong> dicta el género o cópialo de otro día y luego ajusta con − y +.</p>${botonesRapido()}`}
     </section>
+    <div id="rapido"></div>
     <fieldset class="sin-marco"${cerrado ? ' disabled' : ''}>${secciones}${tarjetaCongelado()}</fieldset>
     <p class="ayuda" id="dia-sin-resultados" hidden>Ningún producto coincide con la búsqueda.</p>
     <div class="barra-total" id="dia-total" role="status"></div>
@@ -439,6 +446,7 @@ function buscar(texto) {
 
 export function prepararDia() {
   const vista = $('vista-dia');
+  prepararRapido(vista, () => fecha, () => pintarPanel());
   prepararCierre(vista, () => fecha, pintarEstadoPasos, (pasoNuevo) => {
     if (pasoNuevo) paso = pasoNuevo;
     pintarDia();
@@ -460,6 +468,25 @@ export function prepararDia() {
     }
 
     const fila = e.target.closest('.fila-genero');
+    const mas = e.target.closest('[data-mas]');
+    if (fila && mas) {
+      const p = producto(fila.dataset.id);
+      const salto = porUnidades(p) ? 1000 : 500;
+      const ahora = lineaGenero(estado.dias, p, fecha).inicio || 0;
+      const nuevo = Math.max(0, ahora + Number(mas.dataset.mas) * salto);
+      if (!ponerDato(estado.dias, p, fecha, 'inicio', nuevo || null)) return;
+      if (!comprobarGuardado(guardar())) return;
+      const input = fila.querySelector('[data-campo="inicio"]');
+      input.value = milesimasATexto(nuevo || null);
+      input.removeAttribute('aria-invalid');
+      // Los precios propuestos quedan fijados al poner kilos: se enseñan en sus casillas
+      const l = lineaGenero(estado.dias, p, fecha);
+      fila.querySelector('[data-campo="pvp"]').value = centimosATexto(l.pvp);
+      fila.querySelector('[data-campo="coste"]').value = centimosATexto(l.coste);
+      actualizarFila(fila);
+      pintarCifras();
+      return;
+    }
     if (fila && e.target.closest('[data-abrir-cambio]')) return abrirCambio(fila);
     if (fila && e.target.closest('[data-cerrar-cambio]')) return cerrarCambio(fila);
     const quitar = e.target.closest('[data-quitar-cambio]');
