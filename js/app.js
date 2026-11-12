@@ -10,11 +10,12 @@ import { resumenGenero } from './nucleo/dia.js';
 import { estadoCierre } from './nucleo/cierre.js';
 import { resultadoDelDia, textoResultado } from './vistas/cuadre.js';
 import { pintarCongelado, prepararCongelado } from './vistas/congelado.js';
+import { pintarResumen, prepararResumen } from './vistas/resumen.js';
 import { reposicion, sinStockDePartida } from './nucleo/congelado.js';
 import { hoyISO, fechaLarga, fechaCorta, sumarDias, abreEseDia, HORARIO } from './nucleo/fechas.js';
 import { fmtEuros, fmtKg, fmtUnidades } from './nucleo/numeros.js';
 
-export const VERSION = '0.7';
+export const VERSION = '0.8';
 
 // ---------- Plan de construcción ----------
 
@@ -26,7 +27,7 @@ const PASOS = [
   { titulo: 'Cierre guiado a ciegas', texto: 'Producto a producto, sin casillas olvidadas, con retiradas, mermas y gastos detallados.', hecho: true },
   { titulo: 'Cuadre', texto: 'Lo que debería haber frente a lo cobrado, con margen, ganancia y avisos.', hecho: true },
   { titulo: 'Congelado', texto: 'Stock de la tienda y lista de reposición.', hecho: true },
-  { titulo: 'Resumen', texto: 'Semana y mes, con ganancia y exportación.' },
+  { titulo: 'Resumen', texto: 'Semana y mes, con ganancia y exportación.', hecho: true },
   { titulo: 'Plantilla con foto', texto: 'Rellenar el género con una foto de la hoja impresa.' },
   { titulo: 'Nube y PIN', texto: 'Para el final, si decides aplicarlo: datos compartidos entre aparatos y cada persona con su PIN.' },
 ];
@@ -104,25 +105,6 @@ function pintarInicio() {
 
 const horaTexto = (h) => h.replace(/^0/, '');
 
-// ---------- Secciones todavía en construcción ----------
-
-const EN_OBRAS = {
-  resumen: {
-    titulo: 'Resumen',
-    texto: 'Aquí verás la semana y el mes: lo vendido, lo cobrado, la diferencia y la ganancia, por día y por producto.',
-    pasos: 'Paso 8',
-  },
-};
-
-function pintarEnObras(nombre) {
-  const s = EN_OBRAS[nombre];
-  $('vista-' + nombre).innerHTML = `<h1>${s.titulo}</h1>
-    <div class="resultado pendiente">${ICONO.reloj}
-      <div><p class="grande">Todavía en construcción</p><p>${s.texto}</p></div>
-      <span class="etiqueta">${s.pasos}</span>
-    </div>`;
-}
-
 // ---------- Navegación ----------
 
 const VISTAS = ['inicio', 'dia', 'congelado', 'resumen', 'mas'];
@@ -137,7 +119,7 @@ function mostrarVista(nombre) {
   if (nombre === 'dia') pintarDia();
   if (nombre === 'mas') pintarMas(VERSION);
   if (nombre === 'congelado') pintarCongelado();
-  if (EN_OBRAS[nombre]) pintarEnObras(nombre);
+  if (nombre === 'resumen') pintarResumen();
   window.scrollTo(0, 0);
 }
 
@@ -169,6 +151,7 @@ document.addEventListener('click', (e) => {
 prepararMas();
 prepararDia();
 prepararCongelado();
+prepararResumen();
 protegerDatos();
 pintarPasos();
 mostrarVista('inicio');

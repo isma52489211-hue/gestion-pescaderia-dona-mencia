@@ -29,7 +29,7 @@ En el móvil se puede instalar desde el menú del navegador («Añadir a pantall
 5. Cierre guiado a ciegas: lo que sobra producto a producto, retiradas y mermas, gastos con concepto y caja (con recuento por billetes). **Hecho.**
 6. Cuadre: sale al terminar el cierre, con el detalle por producto, la caja y la ganancia. **Hecho.**
 7. Congelado: stock de la tienda, lo que llega, recuento en cada cierre y lista de reposición por WhatsApp. **Hecho.**
-8. Resumen.
+8. Resumen: semana y mes, día a día y producto a producto, con ganancia y descarga para Excel. **Hecho.**
 9. Plantilla con foto.
 10. Nube y PIN (por decidir): datos compartidos entre aparatos y cada persona con su PIN.
 
@@ -44,6 +44,7 @@ Sin instalaciones ni compilación: HTML, CSS y JavaScript.
   - `cuadre.js`: lo vendido por producto, lo cobrado en caja y la comparación.
   - `dia.js`: el género de cada día (precio propuesto, avisos, resumen y cambios de precio) y `fechas.js` (con el horario).
   - `congelado.js`: stock del congelado (de partida, lo que llega, lo que queda) y reposición.
+  - `resumen.js`: la semana y el mes (solo días cerrados) y la exportación para Excel.
   - `cierre.js`: el cierre a ciegas (lo que sobra, retiradas y mermas, gastos, caja, terminar y reabrir).
   - `productos.js`: reglas del catálogo (nombres sin repetir, ganancia por kilo, archivar).
   - `copia.js`: comprobación de una copia de seguridad antes de restaurarla.

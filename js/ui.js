@@ -26,3 +26,14 @@ export function comprobarGuardado(ok) {
   if (!ok) alert('No se ha podido guardar en este aparato. Comprueba que queda espacio libre y que no estás en una ventana privada.');
   return ok;
 }
+
+// Descarga un archivo de texto (por ejemplo, un CSV para Excel)
+export function descargarArchivo(nombre, texto, tipo = 'text/csv') {
+  // La marca BOM hace que Excel lea bien las tildes y la ñ
+  const blob = new Blob(['﻿' + texto], { type: `${tipo};charset=utf-8` });
+  const enlace = document.createElement('a');
+  enlace.href = URL.createObjectURL(blob);
+  enlace.download = nombre;
+  enlace.click();
+  setTimeout(() => URL.revokeObjectURL(enlace.href), 1000);
+}

@@ -1,7 +1,7 @@
 // Caja Doña Mencía — permite instalar la app y usarla sin conexión.
 // Primero intenta la red (para recibir siempre la última versión) y, si no hay, usa lo guardado.
 
-const CACHE = 'caja-dona-mencia-v7';
+const CACHE = 'caja-dona-mencia-v8';
 const ARCHIVOS = [
   './',
   'index.html',
@@ -14,9 +14,11 @@ const ARCHIVOS = [
   'js/vistas/cierre.js',
   'js/vistas/cuadre.js',
   'js/vistas/congelado.js',
+  'js/vistas/resumen.js',
   'js/nucleo/dia.js',
   'js/nucleo/cierre.js',
   'js/nucleo/congelado.js',
+  'js/nucleo/resumen.js',
   'js/nucleo/fechas.js',
   'js/nucleo/productos.js',
   'js/nucleo/copia.js',
