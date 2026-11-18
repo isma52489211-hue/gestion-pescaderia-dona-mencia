@@ -3,6 +3,7 @@
 // dias['2026-12-01'] = {
 //   genero: { 'merluza': { inicio: 10000, pvp: 1290, coste: 800, cambios: [{ quedaban: 4000, pvp: 990, hora: '13:30' }] }, … },
 //           cantidades en milésimas, dinero en céntimos. «cambios»: cambios de precio durante el día.
+//           «mermaPct»: % de limpieza, se fija al terminar el cierre (hasta entonces, el del catálogo).
 //   caja:   { fondo: 15000, contado, tarjeta, bizum, desglose: { 5000: 2, … }, movimientos: [{ tipo, importe, concepto, hora }] },
 //   salidas: [{ producto, tipo: 'retirada' | 'merma', cantidad, motivo, hora }],   ver cierre.js
 //   congelado: { 'cong-gamba': { llega, queda, sinVenta, pvp, coste } },             ver congelado.js
@@ -47,6 +48,7 @@ export function lineaGenero(dias, producto, fecha) {
     pvp: propio.pvp ?? valorPropuesto(dias, producto, fecha, 'pvp'),
     coste: propio.coste ?? valorPropuesto(dias, producto, fecha, 'coste'),
     cambios: propio.cambios || [],
+    mermaPct: propio.mermaPct ?? producto.mermaPct ?? 0,
   };
 }
 
@@ -78,6 +80,22 @@ export function ponerDato(dias, producto, fecha, campo, valor) {
   return true;
 }
 
+// Al terminar el cierre se fija la merma de limpieza del día:
+// así, si luego cambia la del producto, el día cerrado no se mueve.
+export function fijarMermas(dias, productos, fecha) {
+  for (const p of productos) {
+    if (tieneGenero(dias, p, fecha)) dias[fecha].genero[p.id].mermaPct ??= p.mermaPct || 0;
+  }
+}
+
+// Días cerrados antes de que se guardara la merma: se les fija la que tiene ahora el producto.
+export function completarMermasCerradas(datos) {
+  for (const fecha of Object.keys(datos.dias)) {
+    if (datos.dias[fecha].cerrado) fijarMermas(datos.dias, datos.productos, fecha);
+  }
+  return datos;
+}
+
 export function ponerFondo(dias, fecha, valor) {
   if (dias[fecha]?.cerrado) return false;
   const dia = (dias[fecha] ||= diaVacio());
@@ -96,7 +114,7 @@ export function avisosLinea(dias, producto, fecha) {
   if (l.pvp == null) avisos.push({ tipo: 'sin-precio' });
   if (l.coste == null) avisos.push({ tipo: 'sin-coste' });
 
-  const g = gananciaPorUnidad({ pvp: l.pvp, coste: l.coste, mermaPct: producto.mermaPct });
+  const g = gananciaPorUnidad({ pvp: l.pvp, coste: l.coste, mermaPct: l.mermaPct });
   if (g && g.ganancia <= 0) avisos.push({ tipo: 'sin-ganancia' });
 
   if (l.cambios.some((c) => c.quedaban > l.inicio)) avisos.push({ tipo: 'cambio-con-mas-que-inicio' });
@@ -116,7 +134,7 @@ export function ventaPosible(producto, linea) {
   if (!(linea.inicio > 0) || linea.pvp == null) return null;
   const cambios = linea.cambios || [];
   if (cambios.some((c) => c.pvp == null)) return null;
-  return ventaProducto({ inicio: linea.inicio, sobra: 0, mermaPct: producto.mermaPct || 0, pvp: linea.pvp, cambios }).importe;
+  return ventaProducto({ inicio: linea.inicio, sobra: 0, mermaPct: linea.mermaPct ?? producto.mermaPct ?? 0, pvp: linea.pvp, cambios }).importe;
 }
 
 // ---------- Cambios de precio durante el día ----------

@@ -15,7 +15,7 @@ import { reposicion, sinStockDePartida } from './nucleo/congelado.js';
 import { hoyISO, fechaLarga, fechaCorta, sumarDias, abreEseDia, HORARIO } from './nucleo/fechas.js';
 import { fmtEuros, fmtKg, fmtUnidades } from './nucleo/numeros.js';
 
-export const VERSION = '0.9';
+export const VERSION = '0.9.1';
 
 // ---------- Plan de construcción ----------
 

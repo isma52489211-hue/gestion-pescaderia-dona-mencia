@@ -242,7 +242,7 @@ function filaGenero(p) {
   const l = lineaGenero(estado.dias, p, fecha);
   const u = porUnidades(p) ? 'ud' : 'kg';
   const nombre = escapar(p.nombre);
-  const extras = [p.mermaPct ? `merma ${String(p.mermaPct).replace('.', ',')} %` : '', p.archivado ? 'archivado' : ''].filter(Boolean).join(' · ');
+  const extras = [l.mermaPct ? `merma ${String(l.mermaPct).replace('.', ',')} %` : '', p.archivado ? 'archivado' : ''].filter(Boolean).join(' · ');
   return `<div class="fila-genero" data-id="${p.id}" data-nombre="${escapar(normalizar(p.nombre))}">
     <p class="fg-nombre"><strong>${nombre}</strong>${extras ? ` <small>${extras}</small>` : ''}</p>
     <label class="fg-campo">${porUnidades(p) ? 'Unidades' : 'Kilos'}

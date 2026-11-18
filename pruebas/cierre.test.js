@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ponerDato, ponerFondo, ponerCambio, lineaGenero } from '../js/nucleo/dia.js';
+import { ponerDato, ponerFondo, ponerCambio, lineaGenero, completarMermasCerradas } from '../js/nucleo/dia.js';
+import { APP, revisarCopia } from '../js/nucleo/copia.js';
 import {
   ponerSobra, sobraDe, ponerSalida, quitarSalida, salidasDe, ponerMovimiento, quitarMovimiento,
   ponerCaja, ponerDesglose, totalDesglose, estadoCierre, terminarCierre, reabrirCierre, estaCerrado,
@@ -276,4 +277,70 @@ test('un producto archivado después sigue contando en los días antiguos', () =
   const archivada = { ...merluza, archivado: true };
   const r = cuadreDeUnDia(dias, [archivada, ostras, rape], HOY);
   assert.equal(r.teorico, 10215 + 2700);
+});
+
+// ---------- La merma de limpieza de cada día ----------
+
+const salmon = { id: 'salmon', nombre: 'Salmón', tipo: 'gordo', unidad: 'kg', pvp: 2000, coste: 1000, mermaPct: 30 };
+
+function diaDeSalmon(producto = salmon) {
+  const dias = {};
+  ponerDato(dias, producto, HOY, 'inicio', 10000);
+  ponerFondo(dias, HOY, 0);
+  ponerSobra(dias, producto, HOY, 0);
+  ponerCaja(dias, HOY, 'contado', 14000);
+  ponerCaja(dias, HOY, 'tarjeta', 0);
+  ponerCaja(dias, HOY, 'bizum', 0);
+  return dias;
+}
+
+test('cambiar la merma del catálogo no mueve un día ya cerrado', () => {
+  const dias = diaDeSalmon();
+  assert.deepEqual(terminarCierre(dias, [salmon], HOY, '13:40'), {});
+  const r = cuadreDeUnDia(dias, [{ ...salmon, mermaPct: 10 }], HOY);
+  assert.equal(r.teorico, 14000);
+  assert.equal(r.resultado.diferencia, 0);
+  assert.equal(r.lineas[0].mermaPct, 30);
+});
+
+test('un día cerrado sin merma sigue sin merma aunque luego se ponga una', () => {
+  const sinMerma = { ...salmon, mermaPct: 0 };
+  const dias = diaDeSalmon(sinMerma);
+  terminarCierre(dias, [sinMerma], HOY, '13:40');
+  assert.equal(dias[HOY].genero.salmon.mermaPct, 0);
+  assert.equal(cuadreDeUnDia(dias, [salmon], HOY).teorico, 20000);
+});
+
+test('mientras el día está abierto se usa la merma del catálogo', () => {
+  const dias = diaDeSalmon();
+  assert.equal(dias[HOY].genero.salmon.mermaPct, undefined);
+  assert.equal(cuadreDeUnDia(dias, [{ ...salmon, mermaPct: 10 }], HOY).teorico, 18000);
+});
+
+test('reabrir y volver a cerrar conserva la merma de ese día', () => {
+  const dias = diaDeSalmon();
+  terminarCierre(dias, [salmon], HOY, '13:40');
+  reabrirCierre(dias, HOY);
+  const cambiado = { ...salmon, mermaPct: 10 };
+  terminarCierre(dias, [cambiado], HOY, '13:50');
+  assert.equal(cuadreDeUnDia(dias, [cambiado], HOY).teorico, 14000);
+});
+
+test('los días cerrados con una versión anterior reciben la merma una sola vez', () => {
+  const dias = diaDeSalmon();
+  dias[HOY].cerrado = { hora: '13:40' };
+  const abierto = '2026-12-03';
+  ponerDato(dias, salmon, abierto, 'inicio', 5000);
+  completarMermasCerradas({ productos: [salmon], dias });
+  assert.equal(dias[HOY].genero.salmon.mermaPct, 30);
+  assert.equal(dias[abierto].genero.salmon.mermaPct, undefined);
+  completarMermasCerradas({ productos: [{ ...salmon, mermaPct: 10 }], dias });
+  assert.equal(dias[HOY].genero.salmon.mermaPct, 30);
+});
+
+test('restaurar una copia antigua también fija la merma de sus días cerrados', () => {
+  const dias = diaDeSalmon();
+  dias[HOY].cerrado = { hora: '13:40' };
+  const { datos } = revisarCopia({ app: APP, datos: { version: 1, productos: [salmon], dias, ajustes: {} } });
+  assert.equal(datos.dias[HOY].genero.salmon.mermaPct, 30);
 });

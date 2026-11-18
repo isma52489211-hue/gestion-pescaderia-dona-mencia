@@ -57,6 +57,7 @@ Sin instalaciones ni compilación: HTML, CSS y JavaScript.
 - Género: al apuntar los kilos de un producto, su precio y su coste quedan fijados para ese día. Se proponen los del último día y, si no hay, los habituales del catálogo.
 - Venta posible: todo el género al precio del día, menos la merma de limpieza. Si el precio cambia durante el día, lo que había antes del cambio cuenta al precio de antes y lo que quedaba, al nuevo. La rebaja de un día no pasa al siguiente. La ganancia posible solo se da si se conoce el precio y el coste de todo.
 - Producto: `inicio − sobra − retiradas y mermas = vendido`, menos el % de merma de limpieza si lo tiene. Con cambios de precio, cada tramo se valora a su precio.
+- Merma de limpieza: mientras el día está abierto se usa la del producto; al terminar el cierre queda fijada en ese día, y cambiarla después no mueve los días cerrados.
 - Un producto **sin contar** no es lo mismo que uno del que **no sobra nada**: mientras quede algo sin contar no hay cuadre.
 - Cierre a ciegas: mientras se cierra no se ve con cuánto se empezó ni lo que debería haber en caja. Para terminarlo hace falta lo que sobra de todo y la caja completa (fondo, efectivo, tarjeta y Bizum; 0 vale, vacío no). Terminado, el día queda bloqueado hasta que se reabra.
 - Congelado: `lo que había + lo que llega − lo que queda − retiradas y mermas = vendido`. El stock pasa solo de un día a otro; la primera vez se apunta lo que hay. Reposición: lo que falta para el stock ideal de cada producto.

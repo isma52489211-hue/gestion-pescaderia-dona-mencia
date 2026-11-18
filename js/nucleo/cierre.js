@@ -7,7 +7,7 @@
 // Cantidades en milésimas y dinero en céntimos. «Sin dato» (null) no es lo mismo que 0:
 // un producto del que no sobra nada se apunta como 0 a propósito, nunca se da por hecho.
 
-import { diaVacio, sinDatos, tieneGenero, lineaGenero } from './dia.js';
+import { diaVacio, sinDatos, tieneGenero, lineaGenero, fijarMermas } from './dia.js';
 import { cuadreDelDia, TOLERANCIA_INICIAL } from './cuadre.js';
 import { importe } from './numeros.js';
 import { salidasDe, congeladosDelDia, lineaCongelado, sinStockDePartida, fijarPreciosCongelado } from './congelado.js';
@@ -225,6 +225,7 @@ export function terminarCierre(dias, productos, fecha, hora) {
   const e = estadoCierre(dias, productos, fecha);
   if (!e.listo) return { error: 'faltan-datos', faltan: e.faltan };
   fijarPreciosCongelado(dias, productos, fecha);
+  fijarMermas(dias, productos, fecha);
   dias[fecha].cerrado = { hora };
   return {};
 }
@@ -253,7 +254,7 @@ export function cuadreDeUnDia(dias, productos, fecha, tolerancia = TOLERANCIA_IN
       inicio: l.inicio,
       sobra: d.genero[p.id].sobra ?? null,
       salidas: salidasDe(dias, fecha, p.id),
-      mermaPct: p.mermaPct || 0,
+      mermaPct: l.mermaPct,
       pvp: l.pvp,
       coste: l.coste,
       cambios: l.cambios,
@@ -269,11 +270,12 @@ export function cuadreDeUnDia(dias, productos, fecha, tolerancia = TOLERANCIA_IN
 
   // Cada línea con lo que hace falta para explicarla en pantalla
   const sobras = Object.fromEntries(entrada.map((e) => [e.id, e.sobra]));
+  const mermaDe = Object.fromEntries(entrada.map((e) => [e.id, e.mermaPct]));
   r.lineas = r.lineas.map((l) => ({
     ...l,
     congelado: porId[l.id].tipo === 'congelado',
     unidad: porId[l.id].unidad,
-    mermaPct: porId[l.id].tipo === 'congelado' ? 0 : porId[l.id].mermaPct || 0,
+    mermaPct: mermaDe[l.id],
     sobra: sobras[l.id] ?? null,
     salidas: salidasDe(dias, fecha, l.id),
   }));

@@ -1,5 +1,7 @@
 // Copia de seguridad: empaquetar los datos y comprobar una copia antes de restaurarla.
 
+import { completarMermasCerradas } from './dia.js';
+
 export const APP = 'caja-dona-mencia';
 export const VERSION_DATOS = 1;
 
@@ -21,5 +23,5 @@ export function revisarCopia(copia) {
   if (d.productos.some((p) => !p || typeof p.id !== 'string' || typeof p.nombre !== 'string')) {
     return { error: 'La copia tiene productos dañados.' };
   }
-  return { datos: { ...datosVacios(), ...d }, fecha: copia.fecha || null };
+  return { datos: completarMermasCerradas({ ...datosVacios(), ...d }), fecha: copia.fecha || null };
 }

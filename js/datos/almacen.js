@@ -3,6 +3,7 @@
 // pasan a la nube, solo hay que cambiar este archivo.
 
 import { datosVacios, empaquetarCopia, revisarCopia } from '../nucleo/copia.js';
+import { completarMermasCerradas } from '../nucleo/dia.js';
 
 const CLAVE = 'cdm.datos.v1';
 
@@ -10,7 +11,7 @@ function cargar() {
   const texto = localStorage.getItem(CLAVE);
   if (!texto) return datosVacios();
   try {
-    return { ...datosVacios(), ...JSON.parse(texto) };
+    return completarMermasCerradas({ ...datosVacios(), ...JSON.parse(texto) });
   } catch {
     // Datos ilegibles: se apartan sin borrarlos, para poder recuperarlos a mano
     localStorage.setItem(`${CLAVE}.ilegible.${Date.now()}`, texto);
